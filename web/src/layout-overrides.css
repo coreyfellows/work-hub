@@ -1,0 +1,54 @@
+/*
+ * The page-level layout breakpoints (phones/tablets ≤900px, laptop slide-over, wide and ultrawide screens). Kept out of
+ * styles.css and imported LAST by the generated plugins module, after every plugin's styles.css, so plugin CSS can't
+ * override the core's breakpoints. Moved from styles.css unchanged.
+ */
+
+/* Phones and narrow windows: one column, the page scrolls */
+@media (max-width: 900px) {
+  .ws-page { height: auto; padding: 10px 10px 24px; }
+  .ws-head { flex-wrap: wrap; }
+  .ws-body { grid-template-columns: 1fr; }
+  .ws-main { height: 80dvh; }
+  .ws-side { overflow: visible; }
+}
+
+/* Wide monitors (up to 32:9 ultrawides): more room, still two columns (sessions/terminals left, switcher panel right) */
+@media (min-width: 1800px) {
+  .page { max-width: 1320px; }
+  .session-page { max-width: 1800px; }
+  .ws-page { max-width: 2000px; padding-left: 28px; padding-right: 28px; }
+  .ws-body { gap: 20px; }
+}
+
+/* The right-hand panel is one fixed width for every tab (Details, Diff, Note, Code), so switching never shifts the layout */
+@media (min-width: 901px) {
+  .ws-body, .ws-body.wide-side { grid-template-columns: minmax(0, 1fr) clamp(380px, 36vw, 1000px); }
+}
+
+/* Very wide windows (a 2/3-width window on a 32:9 ultrawide is ~3400px): an even split with slim margins */
+@media (min-width: 2400px) {
+  .ws-page { max-width: none; padding-left: 80px; padding-right: 80px; }
+  .ws-body, .ws-body.wide-side { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+  /* Details doesn't need the width: cap its content, but not the column, so tab switches never shift the layout */
+  .side-view:not(.tool) { max-width: 720px; }
+  .page { max-width: 1500px; }
+  .session-page { max-width: 2400px; }
+}
+
+/* Laptop widths: the terminal column keeps its width; Diff/Note/Code slide over it from the right, and slide
+   back to the side when the terminal takes focus (WorkspacePage sets data-front). 2400px+ keeps its two fixed columns. */
+@media (min-width: 901px) and (max-width: 2399px) {
+  .ws-body { position: relative; }
+  .ws-body.wide-side > .ws-side {
+    position: absolute; top: 0; right: 0; bottom: 0; z-index: 6;
+    width: max(clamp(380px, 36vw, 1000px), 62vw);
+    padding-left: 14px; background: var(--bg);
+    box-shadow: -14px 0 24px rgba(0, 0, 0, 0.5);
+    transition: transform 0.22s ease;
+  }
+  .ws-body.wide-side[data-front="main"] > .ws-side {
+    transform: translateX(calc(max(clamp(380px, 36vw, 1000px), 62vw) - clamp(380px, 36vw, 1000px)));
+    cursor: pointer;
+  }
+}

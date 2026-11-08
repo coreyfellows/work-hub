@@ -1,0 +1,24 @@
+/* session-awareness: the "Sessions at a glance" Details section. Cards wrap and clip inside their box (no sideways scroll). */
+.sa-glance { display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 10px; min-width: 0; }
+.sa-glance .as-of { align-self: flex-start; }
+.sa-stale { font-size: 12px; }
+.sa-card { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; min-width: 0; font-size: 13px; }
+.sa-head { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
+.sa-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.sa-dot.working { background: var(--ok); }
+.sa-dot.waiting { background: var(--warn); }
+.sa-dot.failed { background: var(--bad); }
+.sa-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sa-meta { font-size: 12px; }
+.sa-claim { font-weight: 500; overflow-wrap: anywhere; }
+.sa-intent { font-size: 12px; overflow-wrap: anywhere; }
+.sa-line { font-size: 12px; min-width: 0; display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.sa-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sa-pr { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+.sa-pr .checks { width: auto; }
+.sa-pr-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sa-done { margin: 0; padding-left: 18px; font-size: 12px; }
+.sa-done li { overflow-wrap: anywhere; }
+.sa-file { font-family: var(--mono, ui-monospace, monospace); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sa-file.overlap { color: var(--warn); }
+.sa-also { font-family: inherit; opacity: 0.8; }

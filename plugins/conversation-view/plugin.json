@@ -1,0 +1,36 @@
+{
+  "id": "conversation-view",
+  "apiVersion": 1,
+  "title": "Conversation view",
+  "description": "A session's conversation: the Chat and Log views, the log-card slot, and everything drawn in or driven from it (file-change and git cards, `!` command runs, file links, answering questions, Bash-change snapshots)",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "bashSnapshots",
+      "label": "Show files changed by Bash commands",
+      "type": "boolean",
+      "description": "Snapshots the git working tree around each Bash call (a hook in sessions the app starts) so sed, formatters and scripts show as diff cards. Needs jq and git.",
+      "default": true,
+      "restart": true
+    },
+    {
+      "key": "bashSnapshotsDir",
+      "label": "Snapshot folder",
+      "type": "string",
+      "placeholder": "<state dir>/bash-snaps",
+      "env": "WORK_HUB_BASH_SNAP_DIR",
+      "restart": true
+    },
+    {
+      "key": "bashSnapshotsClaudeSettings",
+      "label": "Claude settings file to check for a global hook",
+      "type": "string",
+      "description": "If this file already runs the snapshot hook, sessions the app starts skip adding it a second time.",
+      "placeholder": "~/.claude/settings.json",
+      "restart": true
+    }
+  ],
+  "settingsOrder": 60
+}

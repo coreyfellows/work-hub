@@ -1,0 +1,4 @@
+/* A run of file changes as one row (FileGroupCard): the file names jump straight to that file. */
+.file-group .edit-more { font-weight: 400; color: var(--muted); }
+.ftree-jump { all: unset; cursor: pointer; font: inherit; color: inherit; border-bottom: 1px dotted #59606b; }
+.ftree-jump:hover, .ftree-jump:focus-visible { color: #fff; border-bottom-color: #c9d1d9; }

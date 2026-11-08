@@ -1,0 +1,28 @@
+{
+  "id": "keep-awake",
+  "apiVersion": 1,
+  "title": "Keep awake",
+  "description": "Keeps the computer from idle-sleeping while a Claude session is working (caffeinate on macOS; systemd-inhibit on Linux and SetThreadExecutionState on Windows, both experimental); closing the lid still sleeps",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "settings": [
+    {
+      "key": "graceMs",
+      "label": "Stay awake this long after the last session stops working (ms)",
+      "type": "number",
+      "default": 120000,
+      "min": 0,
+      "max": 3600000,
+      "restart": true
+    },
+    {
+      "key": "pollMs",
+      "label": "How often to check sessions when no browser is open (ms)",
+      "type": "number",
+      "default": 30000,
+      "min": 5000,
+      "max": 600000,
+      "restart": true
+    }
+  ]
+}

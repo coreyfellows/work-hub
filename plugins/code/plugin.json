@@ -1,0 +1,29 @@
+{
+  "id": "code",
+  "apiVersion": 1,
+  "title": "Code",
+  "description": "VS Code (serve-web) for a workspace's worktrees, embedded as its Code tab",
+  "defaultEnabled": false,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "url",
+      "label": "VS Code address",
+      "type": "string",
+      "description": "Where the VS Code (serve-web) tab points.",
+      "default": "/code",
+      "restart": true
+    },
+    {
+      "key": "vscodeTokenFile",
+      "label": "VS Code token file",
+      "type": "string",
+      "description": "The file holding the serve-web connection token.",
+      "placeholder": "~/.local/state/vscode-serve-web.token",
+      "env": "TW_VSCODE_TOKEN_FILE",
+      "restart": true
+    }
+  ],
+  "settingsOrder": 60
+}

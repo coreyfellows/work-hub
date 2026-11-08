@@ -1,0 +1,20 @@
+/* The live-terminal plugin: the Terminal view (live xterm.js, "▶ Go live", PgUp/PgDn/latest controls). */
+
+.go-live { display: block; margin: 0 0 10px; padding: 6px 14px; }
+
+/* Live terminal */
+.live-term { width: 100%; }
+.live-term .xterm { height: 100%; padding: 2px 0; }
+.live-term .xterm-viewport { background: transparent !important; overflow-y: hidden !important; }
+
+/* Live terminal fills the session area; scroll controls float over it */
+.live-wrap { position: relative; width: 100%; }
+.live-wrap .live-term { position: absolute; inset: 0; }
+.scroll-ctl { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 4px; opacity: 0.55; transition: opacity .15s; z-index: 2; }
+.scroll-ctl:hover { opacity: 1; }
+.scroll-ctl button { width: 34px; height: 30px; padding: 0; font-size: 15px; background: rgba(28, 33, 40, 0.92); }
+.live-status { font-size: 11px; color: var(--muted); padding: 2px 4px; }
+@media (max-width: 700px) { .scroll-ctl { opacity: 0.85; } .scroll-ctl button { width: 40px; height: 36px; } }
+
+/* Mobile: the terminal takes touch drags itself (see LiveTerminal) */
+.live-term { touch-action: none; }

@@ -1,0 +1,56 @@
+{
+  "id": "terminals",
+  "apiVersion": 1,
+  "title": "Terminals",
+  "description": "Shells on this machine that outlive server restarts: the Terminal page, terminal tabs on workspaces, and running a script in a new terminal",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "shell",
+      "label": "Shell",
+      "description": "The program new terminals run, as an absolute path (for example /bin/zsh, /usr/bin/fish, or on Windows C:\\Program Files\\Git\\bin\\bash.exe). Empty uses your login shell (on Windows PowerShell 7 if installed, else Windows PowerShell). A path that is not an executable file is ignored.",
+      "type": "string",
+      "placeholder": "your login shell"
+    },
+    {
+      "key": "shellArgs",
+      "label": "Shell arguments",
+      "description": "Separated by spaces. -l starts a login shell, so your profile and PATH apply (the default); leave empty for a plain shell. On Windows the default -l is dropped unless you chose a shell (PowerShell starts with -NoLogo).",
+      "type": "string",
+      "default": "-l"
+    },
+    {
+      "key": "startDir",
+      "label": "Start folder",
+      "description": "Where terminals in the Terminal tab start (a terminal on a workspace starts in that workspace's folder). An absolute path, or ~/… for your home.",
+      "type": "string",
+      "placeholder": "~"
+    },
+    {
+      "key": "startupCommand",
+      "label": "Startup command",
+      "description": "Typed, with Enter, into every new terminal once it is up (not for scripts run from a ▶ Terminal button), for example: tmux new -As main. One line.",
+      "type": "string"
+    },
+    {
+      "key": "scrollback",
+      "label": "History to keep (lines)",
+      "description": "How many lines of history a new terminal keeps and restores. The terminal daemon learns this setting when it is next restarted after an update; shells already open are not changed.",
+      "type": "number",
+      "default": 5000,
+      "min": 500,
+      "max": 100000
+    },
+    {
+      "key": "autostart",
+      "label": "Start the terminal daemon with the app",
+      "description": "Off if you run it yourself (for example under launchd, systemd or Task Scheduler).",
+      "type": "boolean",
+      "default": true,
+      "restart": true
+    }
+  ],
+  "settingsOrder": 55
+}

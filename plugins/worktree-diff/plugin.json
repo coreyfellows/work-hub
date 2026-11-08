@@ -1,0 +1,9 @@
+{
+  "id": "worktree-diff",
+  "apiVersion": 1,
+  "title": "Worktree diff",
+  "description": "A Diff tab on each workspace: a worktree's changes vs its base branch, the last commit, or what's staged",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx"
+}

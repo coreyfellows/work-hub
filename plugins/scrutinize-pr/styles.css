@@ -1,0 +1,49 @@
+/* scrutinize-pr: the PR page's Summary tab. */
+.scr-tab { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.scr-empty p { margin: 0; line-height: 1.5; }
+.scr-working { color: var(--accent); margin: 0; }
+.scr-working::after { content: ' ⋯'; animation: scr-blink 1.2s infinite; }
+@keyframes scr-blink { 50% { opacity: 0.3; } }
+
+.scr-bar { gap: 4px; border-left: 3px solid var(--ok); }
+.scr-bar.stale { border-left-color: var(--warn, #e2b340); }
+.scr-bar-row { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; min-width: 0; }
+.scr-bar .warn { color: var(--warn, #e2b340); }
+.scr-path { overflow-wrap: anywhere; min-width: 0; }
+
+/* The document: sections stacked, threads under the section they're about. */
+.scr-doc { position: relative; gap: 0; min-width: 0; overflow-wrap: anywhere; }
+.scr-sec { min-width: 0; }
+.scr-sec + .scr-sec { margin-top: 4px; }
+.scr-md { line-height: 1.55; min-width: 0; }
+.scr-md pre { overflow-x: auto; max-width: 100%; }
+.scr-md table { display: block; overflow-x: auto; max-width: 100%; }
+.scr-md img { max-width: 100%; }
+.scr-ask-sec { opacity: 0; transition: opacity 0.15s; margin: 0 0 6px; padding: 0; }
+.scr-sec:hover > .scr-ask-sec, .scr-ask-sec:focus-visible { opacity: 1; }
+@media (hover: none) { .scr-ask-sec { opacity: 0.8; } }
+.scr-pick { position: absolute; z-index: 5; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+
+.scr-thread, .scr-composer { margin: 8px 0 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 8px 10px; background: var(--bg); min-width: 0; }
+.scr-composer.compact { margin: 8px 0 0; border: none; padding: 0; background: none; }
+.scr-thread-head { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.scr-thread-toggle { padding: 0; text-align: left; min-width: 0; overflow-wrap: anywhere; }
+.scr-thread.closed { padding-bottom: 6px; }
+.scr-quote { margin: 6px 0; padding: 2px 10px; border-left: 3px solid var(--border); color: var(--muted); white-space: pre-wrap; max-height: 7.5em; overflow: auto; font-size: 13px; }
+.scr-msg { margin-top: 8px; min-width: 0; }
+.scr-msg-head { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; margin-bottom: 2px; }
+.scr-kind { color: var(--accent); }
+.scr-you { white-space: pre-wrap; }
+.scr-msg .md pre { overflow-x: auto; max-width: 100%; }
+.scr-composer textarea { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; font-size: 13px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; }
+.scr-composer-actions { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+
+/* Phones: the selection's own menu sits over the text, so the ask button docks at the bottom instead. */
+@media (max-width: 700px) {
+  .scr-pick { position: fixed; top: auto !important; left: 50% !important; bottom: 16px; transform: translateX(-50%); padding: 10px 18px; font-size: 14px; }
+}
+
+/* Links in the summary and its answers: the app's links are plain text by default, so these are made to stand out. */
+.scr-md a, .scr-msg .md a { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); text-underline-offset: 2px; }
+.scr-md a:hover, .scr-msg .md a:hover { text-decoration-color: currentColor; }
+.scr-md a code, .scr-msg .md a code { color: inherit; }

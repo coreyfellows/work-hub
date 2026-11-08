@@ -1,0 +1,2 @@
+/* New workspace page (/workspaces/new). */
+.form { display: flex; flex-direction: column; gap: 10px; }

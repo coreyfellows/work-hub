@@ -1,0 +1,9 @@
+{
+  "id": "ticket-workflow",
+  "apiVersion": 1,
+  "title": "Ticket workflow",
+  "description": "A bundled copy of the ticket-workflow Claude plugin (worktree layout, ticket notes, Jira defaults, model choice), loaded only into sessions work-hub starts",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "claude": "claude"
+}

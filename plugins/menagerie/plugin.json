@@ -1,0 +1,50 @@
+{
+  "id": "menagerie",
+  "apiVersion": 1,
+  "title": "Menagerie",
+  "description": "Resident characters you pick, drawn and voiced for you, in the Chat view. Turn on, then set up your cast.",
+  "defaultEnabled": false,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "claude": "claude",
+  "settingsOrder": 60,
+  "settings": [
+    {
+      "key": "model",
+      "label": "Generation model",
+      "type": "select",
+      "description": "Writes and draws each character (one run per character or reroll; spends tokens).",
+      "options": [
+        {
+          "value": "opus",
+          "label": "opus"
+        },
+        {
+          "value": "fable",
+          "label": "fable"
+        },
+        {
+          "value": "sonnet",
+          "label": "sonnet"
+        }
+      ],
+      "default": "opus"
+    },
+    {
+      "key": "seed",
+      "label": "Characters to start with",
+      "type": "string",
+      "description": "Comma-separated names, generated (as \"play them\") only at the plugin's first start, if the cast is empty then; spends tokens. Asked on the first-run page.",
+      "placeholder": "Ron Burgundy, a grumpy lighthouse keeper"
+    }
+  ],
+  "firstRunOffer": {
+    "label": "Menagerie: resident characters in your sessions",
+    "description": "Name a few characters you like; each gets a voice, lines, a cartoon portrait and animations, and hosts some of your sessions. Generating them spends tokens (one Opus run each).",
+    "ask": {
+      "key": "seed",
+      "label": "Characters you like (comma-separated, up to six)",
+      "placeholder": "Ron Burgundy, a grumpy lighthouse keeper"
+    }
+  }
+}

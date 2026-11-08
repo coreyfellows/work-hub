@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Runs a script handed over by work-hub's "▶ Terminal" button in this terminal, recording what it prints
+# (under script(1) where there is one, so it still has a real terminal: prompts and colours work) and its exit code, which
+# work-hub saves on the run's record. Usage: wh-term-run <run-id> [<runs-dir>]; the command is in <runs-dir>/<id>.cmd
+# (the terminals plugin passes its runs dir; without it, the default term-runs folder of the state dir).
+set -uo pipefail
+
+id="${1:?usage: wh-term-run <run-id> [<runs-dir>]}"
+dir="${2:-${WORK_HUB_TERM_RUNS_DIR:-${WORK_HUB_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/work-hub}/term-runs}}"
+[[ "$id" =~ ^[0-9]+$ && -f "$dir/$id.cmd" ]] || { echo "wh-term-run: no such run: $id" >&2; exit 2; }
+cmd="$(cat "$dir/$id.cmd")"
+
+printf '\033[2m$ %s\033[0m\n' "$cmd"
+# script(1) differs: BSD (macOS) takes the command after the file, util-linux (Linux) a -c string and -e for its exit
+# code; Git Bash on Windows has none, so the output is tee'd (no terminal for the script then, but it still runs).
+if script --version 2>/dev/null | grep -q util-linux; then
+  script -q -e -c "/bin/bash $(printf '%q' "$dir/$id.cmd")" "$dir/$id.log"
+  code=$?
+elif command -v script >/dev/null 2>&1 && case "$(uname -s)" in Darwin | *BSD) true ;; *) false ;; esac; then
+  script -q "$dir/$id.log" /bin/bash -c "$cmd"
+  code=$?
+else
+  /bin/bash -c "$cmd" 2>&1 | tee "$dir/$id.log"
+  code=${PIPESTATUS[0]}
+fi
+echo "$code" > "$dir/$id.exit"
+if [ "$code" -eq 0 ]; then printf '\033[2m(done; output saved to work-hub)\033[0m\n'; else printf '\033[31m(exit %s; output saved to work-hub)\033[0m\n' "$code"; fi

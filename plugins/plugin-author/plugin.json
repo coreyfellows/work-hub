@@ -1,0 +1,24 @@
+{
+  "id": "plugin-author",
+  "apiVersion": 1,
+  "title": "Create plugin",
+  "description": "A Create plugin button in Settings → Plugins: describe a plugin and a Claude session builds it in a new workspace (official in the work-hub repo, or local in a folder you pick)",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "model",
+      "label": "Author model",
+      "type": "select",
+      "description": "The model of the session that builds a new plugin.",
+      "options": [
+        { "value": "fable", "label": "fable" },
+        { "value": "opus", "label": "opus" },
+        { "value": "sonnet", "label": "sonnet" },
+        { "value": "haiku", "label": "haiku" }
+      ],
+      "default": "opus"
+    }
+  ]
+}

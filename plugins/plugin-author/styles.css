@@ -1,0 +1,13 @@
+/* Create plugin page (/plugins/new): one column at every width; long paths wrap instead of widening the page. */
+.pa-form { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pa-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pa-field > span:first-child { font-weight: 600; }
+.pa-field select { width: 100%; min-width: 0; max-width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; font: inherit; text-overflow: ellipsis; }
+.pa-field input, .pa-field textarea { min-width: 0; }
+.pa-path { font-family: var(--mono, monospace); }
+.pa-toggle { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; min-width: 0; }
+.pa-toggle input[type='checkbox'] { flex: none; width: auto; margin: 3px 0 0; }
+.pa-toggle > span { min-width: 0; overflow-wrap: anywhere; }
+.pa-sub { margin-left: 24px; }
+.pa-form .muted, .pa-form .error { overflow-wrap: anywhere; }
+.pa-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

@@ -1,0 +1,181 @@
+/* The menagerie plugin's styles (moved from the core's styles.css): the working bubble as the host, aside cards,
+   portraits and their animations, the faces page, questions framed as the host, and the quip box's exits. */
+.fun-pulse .pulse-text { background-image: var(--fun-grad); font-weight: 600; letter-spacing: .02em; }
+.fun-pulse .fun-avatar { box-shadow: 0 0 0 1.5px var(--fun-color); }
+
+/* Menagerie: a host's aside at the end of a reply, styled after the host (turning the plugin off in Settings → Plugins drops it) */
+.fun-aside { position: relative; margin-top: 4px; border-radius: 10px; padding: 1px; background: var(--fun-border); max-width: 100%; min-width: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
+.fun-aside > * { background: #15171c; }
+.fun-trim { width: 0; min-width: 100%; overflow: hidden; white-space: nowrap; font: 10.5px/1.6 var(--mono); letter-spacing: .08em; border-radius: 9px 9px 0 0; }
+.fun-trim span { display: inline-block; background: var(--fun-trim); background-size: 50% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fun-body { display: flex; gap: 10px; align-items: flex-start; padding: 7px 12px 9px; border-radius: 0 0 9px 9px; }
+.fun-aside:not(:has(.fun-trim)) .fun-body { border-radius: 9px; }
+.fun-avatar { display: block; flex: none; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--fun-color, #444); }
+.fun-avatar.emoji { display: flex; align-items: center; justify-content: center; background: #22262d; line-height: 1; }
+.fun-who .fun-avatar { display: inline-block; vertical-align: -3px; box-shadow: none; }
+.fun-lineup { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+/* /settings/faces (FacesPage.tsx): every host in every mood and reaction. Cells wrap on phones. */
+.faces-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.faces-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 0; border-top: 1px solid var(--border); min-width: 0; }
+.faces-row:first-of-type { border-top: none; }
+.faces-name { width: 120px; flex: none; font-weight: 600; }
+.faces-cells { display: flex; flex-wrap: wrap; gap: 10px 14px; min-width: 0; }
+.faces-cell { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 96px; }
+.faces-cell figcaption { font-size: 11px; color: var(--muted); text-align: center; max-width: 120px; }
+.faces-hosts { flex-wrap: wrap; }
+.faces-hosts button { flex: 1 1 auto; }
+@media (max-width: 700px) { .faces-name { width: 100%; } }
+.fun-words { min-width: 0; }
+.fun-name { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; background: var(--fun-grad); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fun-text { color: var(--fun-text); font-style: italic; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.fun-group .bubble { box-shadow: inset 3px 0 0 var(--fun-color); }
+.fun-who { color: var(--fun-color); }
+
+/* Each host's motion, from the banner modes */
+.fun-wave .fun-name { animation: fun-slide 10s linear infinite; }
+.fun-wave .fun-trim span, .fun-marquee .fun-trim span { animation: fun-ticker 34s linear infinite; }
+.fun-marquee .fun-trim span { animation-duration: 18s; }
+.fun-marquee .fun-name { animation: fun-slide 5s linear infinite; }
+.fun-fade .fun-name, .fun-fade .fun-trim span { animation: fun-slide 26s ease-in-out infinite alternate; }
+.fun-flicker .fun-name { animation: fun-flicker 9s steps(1) infinite; text-shadow: none; }
+.fun-flicker { box-shadow: 0 0 10px -2px var(--fun-color); }
+.fun-stack .fun-avatar { animation: fun-wobble 3.6s ease-in-out infinite; }
+.fun-still .fun-text { text-transform: lowercase; font-style: normal; opacity: .85; }
+.fun-badge { color: #ff3b3b; -webkit-text-fill-color: #ff3b3b; margin-right: .6em; }
+@keyframes fun-slide { from { background-position: 0% 0; } to { background-position: 200% 0; } }
+@keyframes fun-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes fun-flicker { 0%, 100% { opacity: 1; } 8% { opacity: .25; } 10% { opacity: 1; } 47% { opacity: .4; } 49% { opacity: 1; } }
+@keyframes fun-wobble { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(1.5px); } }
+/* Portrait idle animations (HostAvatar.tsx: av-* groups). Periods are odd on purpose so moves rarely line up. */
+.fun-avatar [class^="av-"] { transform-box: fill-box; transform-origin: center; }
+.fun-avatar .av-blink { animation: av-blink 4.7s infinite; }
+@keyframes av-blink { 0%, 93%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+/* Faces by mood (HostAvatar.tsx AvatarMood): av-eyes glance (av-shades for the Dude), av-brows raise/furrow/cock
+   (rotate = one brow up, one down), and one of three mouths shows (m-rest / m-smile / m-o, swapped with steps(1)).
+   Idle faces get a per-host --av-phase so a row of them doesn't move in lockstep. */
+.fun-avatar :is(.av-eyes, .av-shades, .av-brows, .m-rest, .m-smile, .m-o) {
+  animation-iteration-count: infinite; animation-delay: var(--av-phase, 0s); animation-timing-function: ease-in-out;
+}
+.fun-avatar :is(.m-rest, .m-smile, .m-o) { animation-timing-function: steps(1, end); }
+/* Small faces (≤30px, e.g. the working bubble) move further (--av-amp, set in HostAvatar) and get a bigger mouth. */
+.fun-avatar.av-small .av-mouth { transform-box: fill-box; transform-origin: center; transform: scale(1.3); }
+.fun-avatar.mood-idle :is(.av-eyes, .av-shades, .av-brows, .m-rest, .m-smile, .m-o) { animation-duration: 12s; }
+.fun-avatar.mood-thinking :is(.av-eyes, .av-shades, .av-brows, .m-rest, .m-smile, .m-o) { animation-duration: 9s; }
+.fun-avatar.mood-curious :is(.av-eyes, .av-shades, .av-brows, .m-rest, .m-smile, .m-o) { animation-duration: 8s; }
+.fun-avatar.mood-pleased :is(.av-eyes, .av-shades, .av-brows, .m-rest, .m-smile, .m-o) { animation-duration: 7s; }
+.fun-avatar.mood-idle :is(.av-eyes, .av-shades) { animation-name: av-look-idle; }
+.fun-avatar.mood-idle .av-brows { animation-name: av-brow-idle; }
+.fun-avatar.mood-idle .m-rest { animation-name: m-rest-idle; }
+.fun-avatar.mood-idle .m-smile { animation-name: m-smile-idle; }
+.fun-avatar.mood-idle .m-o { animation-name: m-o-idle; }
+.fun-avatar.mood-thinking :is(.av-eyes, .av-shades) { animation-name: av-look-thinking; }
+.fun-avatar.mood-thinking .av-brows { animation-name: av-brow-thinking; }
+.fun-avatar.mood-thinking .m-rest { animation-name: m-rest-thinking; }
+.fun-avatar.mood-thinking .m-smile { animation-name: m-smile-thinking; }
+.fun-avatar.mood-thinking .m-o { animation-name: m-o-thinking; }
+.fun-avatar.mood-curious :is(.av-eyes, .av-shades) { animation-name: av-look-curious; }
+.fun-avatar.mood-curious .av-brows { animation-name: av-brow-curious; }
+.fun-avatar.mood-curious .m-rest { animation-name: m-rest-curious; }
+.fun-avatar.mood-curious .m-smile { animation-name: m-smile-curious; }
+.fun-avatar.mood-curious .m-o { animation-name: m-o-curious; }
+.fun-avatar.mood-pleased :is(.av-eyes, .av-shades) { animation-name: av-look-pleased; }
+.fun-avatar.mood-pleased .av-brows { animation-name: av-brow-pleased; }
+.fun-avatar.mood-pleased .m-rest { animation-name: m-rest-pleased; }
+.fun-avatar.mood-pleased .m-smile { animation-name: m-smile-pleased; }
+@keyframes av-look-idle { 0%, 18% { transform: none; } 21%, 33% { transform: translate(calc(-2.2px * var(--av-amp, 1)), 0); } 36%, 48% { transform: translate(calc(2.1px * var(--av-amp, 1)), calc(-1px * var(--av-amp, 1))); } 51%, 84% { transform: none; } 87%, 93% { transform: translate(calc(-1.1px * var(--av-amp, 1)), calc(0.8px * var(--av-amp, 1))); } 96%, 100% { transform: none; } }
+@keyframes av-brow-idle { 0%, 54% { transform: none; } 57%, 68% { transform: translateY(calc(-1.2px * var(--av-amp, 1))); } 71%, 80% { transform: translateY(calc(-2.2px * var(--av-amp, 1))); } 83%, 100% { transform: none; } }
+@keyframes av-look-thinking { 0%, 8% { transform: none; } 12%, 38% { transform: translate(calc(-1.8px * var(--av-amp, 1)), calc(-1.8px * var(--av-amp, 1))); } 43%, 52% { transform: translate(calc(-2.1px * var(--av-amp, 1)), calc(0.7px * var(--av-amp, 1))); } 56%, 64% { transform: translate(0, calc(0.7px * var(--av-amp, 1))); } 68%, 76% { transform: translate(calc(2.1px * var(--av-amp, 1)), calc(0.7px * var(--av-amp, 1))); } 80%, 100% { transform: none; } }
+@keyframes av-brow-thinking { 0%, 8% { transform: none; } 12%, 38% { transform: translateY(calc(-1px * var(--av-amp, 1))) rotate(calc(5deg * var(--av-amp, 1))); } 43%, 76% { transform: translateY(calc(0.8px * var(--av-amp, 1))); } 80%, 88% { transform: translateY(calc(-1.8px * var(--av-amp, 1))); } 92%, 100% { transform: none; } }
+@keyframes av-look-curious { 0%, 30% { transform: none; } 34%, 48% { transform: translate(calc(1.8px * var(--av-amp, 1)), calc(-0.6px * var(--av-amp, 1))); } 52%, 100% { transform: none; } }
+@keyframes av-brow-curious { 0%, 4% { transform: none; } 8%, 46% { transform: translateY(calc(-1px * var(--av-amp, 1))) rotate(calc(-8deg * var(--av-amp, 1))); } 50%, 56% { transform: none; } 60%, 88% { transform: translateY(calc(-1.8px * var(--av-amp, 1))); } 92%, 100% { transform: none; } }
+@keyframes av-look-pleased { 0%, 40% { transform: none; } 44%, 64% { transform: translate(calc(2.2px * var(--av-amp, 1)), calc(0.3px * var(--av-amp, 1))); } 68%, 100% { transform: none; } }
+@keyframes av-brow-pleased { 0%, 8% { transform: none; } 11% { transform: translateY(calc(-1.8px * var(--av-amp, 1))); } 14% { transform: none; } 17% { transform: translateY(calc(-1.8px * var(--av-amp, 1))); } 20%, 44% { transform: none; } 48%, 62% { transform: translateY(calc(-0.6px * var(--av-amp, 1))) rotate(calc(6deg * var(--av-amp, 1))); } 66%, 100% { transform: none; } }
+@keyframes m-rest-idle { 0% { opacity: 1; } 56% { opacity: 0; } 68% { opacity: 1; } 71% { opacity: 0; } 80% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes m-smile-idle { 0% { opacity: 0; } 56% { opacity: 1; } 68% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes m-o-idle { 0% { opacity: 0; } 71% { opacity: 1; } 80% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes m-rest-thinking { 0% { opacity: 1; } 14% { opacity: 0; } 34% { opacity: 1; } 80% { opacity: 0; } 94% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes m-smile-thinking { 0% { opacity: 0; } 80% { opacity: 1; } 94% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes m-o-thinking { 0% { opacity: 0; } 14% { opacity: 1; } 34% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes m-rest-curious { 0% { opacity: 1; } 8% { opacity: 0; } 22% { opacity: 1; } 62% { opacity: 0; } 86% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes m-smile-curious { 0% { opacity: 0; } 62% { opacity: 1; } 86% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes m-o-curious { 0% { opacity: 0; } 8% { opacity: 1; } 22% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes m-rest-pleased { 0% { opacity: 0; } 40% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes m-smile-pleased { 0% { opacity: 1; } 40% { opacity: 0; } 66%, 100% { opacity: 1; } }
+/* One-off reactions (HostAvatar `react`, class react-* for REACT_MS, then the mood loop resumes). The whole portrait
+   moves (px, so the same at any size) and the face parts play the reaction instead of their mood. */
+.fun-avatar.react-nod { animation: av-r-nod 1.1s ease-in-out; }
+.fun-avatar.react-alarm { animation: av-r-alarm 1.2s ease-out; }
+.fun-avatar.react-delight { animation: av-r-hop 1.3s ease-out; }
+@keyframes av-r-nod { 0%, 100% { transform: none; } 20%, 60% { transform: translateY(2.5px) rotate(-4deg); } 40%, 80% { transform: none; } }
+@keyframes av-r-alarm { 0% { transform: none; } 10% { transform: translateY(-4px) scale(1.1); } 22% { transform: translateX(-2.5px) scale(1.1); } 34% { transform: translateX(2.5px) scale(1.05); } 46% { transform: translateX(-2px); } 58% { transform: translateX(1.5px); } 70%, 100% { transform: none; } }
+@keyframes av-r-hop { 0% { transform: none; } 16% { transform: translateY(-6px) rotate(-5deg); } 32% { transform: none; } 48% { transform: translateY(-3.5px) rotate(4deg); } 64%, 100% { transform: none; } }
+.fun-avatar[class*="react-"] :is(.av-eyes, .av-shades, .av-brows, .m-rest, .m-smile, .m-o) { animation: none; }
+.fun-avatar.react-nod .av-brows { animation: av-r-brow-up 1.1s ease-out; --av-r-up: -1px; }
+.fun-avatar.react-alarm .av-brows { animation: av-r-brow-up 1.2s ease-out; --av-r-up: -2.8px; }
+.fun-avatar.react-delight .av-brows { animation: av-r-brow-up 1.3s ease-out; --av-r-up: -2px; }
+@keyframes av-r-brow-up { 0%, 100% { transform: none; } 12%, 80% { transform: translateY(calc(var(--av-r-up) * var(--av-amp, 1))); } }
+.fun-avatar.react-alarm .av-eyes { animation: av-r-wide 1.2s ease-out; }
+@keyframes av-r-wide { 0%, 100% { transform: none; } 10%, 75% { transform: scale(1.4); } }
+.fun-avatar.react-nod .av-eyes { animation: av-r-down 1.1s ease-in-out; }
+@keyframes av-r-down { 0%, 100% { transform: none; } 20%, 60% { transform: translateY(calc(0.8px * var(--av-amp, 1))); } 40%, 80% { transform: none; } }
+.fun-avatar.react-alarm .m-o, .fun-avatar:is(.react-nod, .react-delight) .m-smile { animation: av-r-show 1.5s steps(1); }
+.fun-avatar.react-alarm :is(.m-rest, .m-smile), .fun-avatar:is(.react-nod, .react-delight) :is(.m-rest, .m-o) { animation: av-r-hide 1.5s steps(1); }
+@keyframes av-r-show { 0%, 100% { opacity: 1; } }
+@keyframes av-r-hide { 0%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .fun-aside, .fun-aside * { animation: none !important; }
+  .fun-avatar, .fun-avatar [class^="av-"], .fun-avatar [class^="m-"] { animation: none !important; }
+}
+
+
+/* Menagerie: questions framed as the host (QuestionForm and question messages in the log) */
+.fun-qform, .fun-ask { border: 1.5px solid transparent; border-radius: 10px; background: linear-gradient(#171a20, #171a20) padding-box, var(--fun-border) border-box; }
+.fun-ask { padding: 9px 11px; }
+.fun-ask-head { display: flex; gap: 9px; align-items: center; min-width: 0; }
+.fun-ask-line { font-style: italic; color: var(--fun-text); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.fun-qform .q-option.on { border-color: var(--fun-color); background: color-mix(in srgb, var(--fun-color) 14%, var(--panel)); }
+.fun-qform .q-mark { color: var(--fun-color); }
+.fun-qform .q-other.on { border-color: var(--fun-color); }
+.fun-qform .tag { border-color: var(--fun-color); color: var(--fun-color); }
+.fun-qform button.primary:not(:disabled) { background: color-mix(in srgb, var(--fun-color) 65%, #000); border-color: var(--fun-color); color: #fff; }
+.fun-qform.sent { color: var(--fun-text); }
+
+/* The quip box (portrait + words) leaves in each host's own way; the box's height closes up at the end (--bye = exit length) */
+.quip { display: grid; grid-template-rows: 1fr; }
+.quip-inner { min-height: 0; }
+.quip-bye { animation: quip-collapse var(--bye, 1.6s) linear forwards; }
+.quip-bye .quip-inner { animation: var(--bye-anim, bye-fade) var(--bye, 1.6s) forwards; }
+@keyframes quip-collapse { 0%, 80% { grid-template-rows: 1fr; } 100% { grid-template-rows: 0fr; } }
+/* Each host's exit and prop moves come from its cast data (castCss, a <style data-menagerie> the plugin mounts); a host
+   whose motion doesn't validate just fades */
+@keyframes bye-fade { to { opacity: 0; transform: scale(0.96); } }
+@media (prefers-reduced-motion: reduce) { .quip-bye .quip-inner { animation: bye-fade 0.4s forwards; } .quip-bye { animation-duration: 0.4s; } }
+
+/* The cast editor (Settings → Plugins → Menagerie, CastEditor.tsx) and the setup prompt (SetupBanner.tsx). Cards wrap to
+   one column on phones; every row wraps instead of widening the page. */
+.fun-setup-offer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 18px 0; padding: 10px 12px; border: 1px solid #6d4b8f; background: rgba(176, 106, 255, 0.08); border-radius: 10px; }
+.fun-editor { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.fun-setup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fun-setup-row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; min-width: 0; }
+.fun-setup-row input { flex: 1 1 220px; min-width: 0; }
+.fun-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.fun-seg button { border: 0; border-radius: 0; background: transparent; }
+.fun-seg button.on { background: var(--panel-2); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.fun-setup-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.fun-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.fun-card { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1.5px solid transparent; background: linear-gradient(#171a20, #171a20) padding-box, var(--fun-border, linear-gradient(var(--border), var(--border))) border-box; }
+.fun-card-head { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.fun-card-head .fun-name { overflow-wrap: anywhere; }
+.fun-card-asks { margin: 0; padding-left: 18px; color: var(--fun-text, var(--muted)); font-style: italic; font-size: 12.5px; overflow-wrap: anywhere; }
+.fun-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.fun-card-job { overflow-wrap: anywhere; }
+.fun-placeholder.pulsing { animation: fun-card-pulse 1.8s ease-in-out infinite; }
+@keyframes fun-card-pulse { 50% { opacity: .55; } }
+.fun-reroll { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); min-width: 0; }
+.fun-reroll input { min-width: 0; }
+.fun-io { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fun-import-preview { flex-basis: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; overflow-wrap: anywhere; }
+.fun-import-preview ul { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; max-height: 240px; overflow-y: auto; }
+.fun-io label.button { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+@media (max-width: 700px) { .fun-cards { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .fun-placeholder.pulsing { animation: none; } }

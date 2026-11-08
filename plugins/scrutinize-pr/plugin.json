@@ -1,0 +1,40 @@
+{
+  "id": "scrutinize-pr",
+  "apiVersion": 1,
+  "title": "PR summary",
+  "description": "A Summary tab on the PR page: Claude writes a narrative guide to the PR (saved locally), says how much changed since, and answers questions about any passage",
+  "defaultEnabled": true,
+  "requires": [
+    "github"
+  ],
+  "server": "server.ts",
+  "web": "web.tsx",
+  "skills": "skills",
+  "settings": [
+    {
+      "key": "model",
+      "label": "Model",
+      "type": "select",
+      "description": "Writes the summaries and answers the questions.",
+      "options": [
+        {
+          "value": "fable",
+          "label": "fable"
+        },
+        {
+          "value": "opus",
+          "label": "opus"
+        },
+        {
+          "value": "sonnet",
+          "label": "sonnet"
+        },
+        {
+          "value": "haiku",
+          "label": "haiku"
+        }
+      ],
+      "default": "opus"
+    }
+  ]
+}

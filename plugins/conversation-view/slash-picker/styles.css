@@ -1,0 +1,8 @@
+/* The prompt box's "/" picker (SlashMenu.tsx): opens above the box */
+.slash-menu { position: absolute; overscroll-behavior: contain; left: 0; right: 0; bottom: calc(100% + 6px); max-height: min(300px, 45vh); overflow-y: auto; background: #15181d; border: 1px solid #343a44; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.5); z-index: 20; }
+.slash-item { display: flex; gap: 10px; align-items: baseline; padding: 6px 10px; cursor: pointer; min-width: 0; font-size: 13px; }
+.slash-item.sel { background: #262b33; }
+.slash-name { font-family: var(--mono); color: var(--accent); flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slash-desc { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slash-src { flex: none; font-size: 11px; color: var(--muted); border: 1px solid #343a44; border-radius: 4px; padding: 0 5px; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 700px) { .slash-src { display: none; } }

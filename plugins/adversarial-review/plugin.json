@@ -1,0 +1,60 @@
+{
+  "id": "adversarial-review",
+  "apiVersion": 1,
+  "title": "Adversarial review",
+  "description": "Review a branch or PR with several models in the background, then start one session to verify and address the findings",
+  "defaultEnabled": true,
+  "requires": [
+    "worktree-diff"
+  ],
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "model",
+      "label": "Reviewer model",
+      "type": "select",
+      "description": "Used for the reviewers when the repo has its own review guidance (one reviewer), and for the address-review session.",
+      "options": [
+        {
+          "value": "fable",
+          "label": "fable"
+        },
+        {
+          "value": "opus",
+          "label": "opus"
+        },
+        {
+          "value": "sonnet",
+          "label": "sonnet"
+        },
+        {
+          "value": "haiku",
+          "label": "haiku"
+        }
+      ],
+      "default": "opus",
+      "env": "WORK_HUB_REVIEW_MODEL",
+      "restart": true
+    },
+    {
+      "key": "reviewersFile",
+      "label": "Reviewers file",
+      "type": "string",
+      "description": "A JSON file listing the reviewers (models or commands). Missing = Claude fable, opus and sonnet.",
+      "placeholder": "<config dir>/reviewers.json",
+      "env": "WORK_HUB_REVIEWERS_FILE",
+      "restart": true
+    },
+    {
+      "key": "dir",
+      "label": "Reports folder",
+      "type": "string",
+      "description": "Where finished review reports are written.",
+      "placeholder": "<state dir>/reviews",
+      "env": "WORK_HUB_REVIEW_DIR",
+      "restart": true
+    }
+  ],
+  "settingsOrder": 60
+}

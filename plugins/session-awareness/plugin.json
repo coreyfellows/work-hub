@@ -1,0 +1,50 @@
+{
+  "id": "session-awareness",
+  "apiVersion": 1,
+  "title": "Session awareness",
+  "description": "Gives every session in a workspace a short, server-derived picture of its sibling sessions (what they own, their PRs, what they finished), refreshed only when something changes",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "nudgeIntervalMs",
+      "label": "Check for sibling changes during a long turn this often (ms; 0 = only between prompts)",
+      "type": "number",
+      "default": 300000,
+      "min": 0,
+      "max": 3600000
+    },
+    {
+      "key": "maxBlockChars",
+      "label": "Longest text per sibling session (characters)",
+      "type": "number",
+      "default": 600,
+      "min": 200,
+      "max": 2000
+    },
+    {
+      "key": "startPrompt",
+      "label": "Add the sibling digest to new sessions' start prompts",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "staleAfterMs",
+      "label": "Mark status and PR facts as stale after (ms)",
+      "type": "number",
+      "default": 600000,
+      "min": 60000,
+      "max": 86400000
+    },
+    {
+      "key": "rebuildDebounceMs",
+      "label": "Wait this long after a change before rebuilding a digest (ms)",
+      "type": "number",
+      "default": 2000,
+      "restart": true,
+      "min": 0,
+      "max": 60000
+    }
+  ]
+}

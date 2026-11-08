@@ -1,0 +1,6 @@
+{
+  "name": "ticket-workflow",
+  "version": "0.3.0-work-hub",
+  "description": "work-hub's bundled ticket-workflow: worktree layout under the worktrees root, a SilverBullet note per ticket, Jira ticket defaults and model choice, for sessions work-hub starts.",
+  "keywords": ["worktree", "jira", "tickets", "silverbullet"]
+}

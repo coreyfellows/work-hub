@@ -1,0 +1,29 @@
+{
+  "id": "notes",
+  "apiVersion": 1,
+  "title": "Notes",
+  "description": "A SilverBullet note per workspace, made when the workspace is created and embedded as its Note tab",
+  "defaultEnabled": false,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "url",
+      "label": "Notes address",
+      "type": "string",
+      "description": "Where the Note tab points.",
+      "default": "/notes",
+      "restart": true
+    },
+    {
+      "key": "notesDir",
+      "label": "Notes folder",
+      "type": "string",
+      "description": "Where the notes (one per workspace) live.",
+      "placeholder": "~/notes",
+      "env": "TW_NOTES_DIR",
+      "restart": true
+    }
+  ],
+  "settingsOrder": 60
+}

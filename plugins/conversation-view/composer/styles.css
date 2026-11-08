@@ -1,0 +1,35 @@
+/* The Chat view's prompt box (Composer.tsx). Moved here from the core stylesheet. */
+.composer { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.session-page .composer { padding: 8px 0 12px; border: none; }
+.session-embed .composer { padding: 0 0 12px; border: none; }
+.fullscreen .composer { padding-bottom: 0; }
+.keys { display: flex; gap: 6px; flex-wrap: wrap; }
+.key { font-family: var(--mono); font-size: 12px; padding: 3px 9px; }
+@media (max-width: 700px) {
+  .key { padding: 8px 12px; font-size: 14px; }
+}
+
+.compose-box { display: flex; gap: 8px; align-items: stretch; position: relative; }
+.compose-box textarea { flex: 1; resize: none; }
+.compose-box.sending textarea { opacity: 0.6; }
+button.send { min-width: 78px; display: grid; place-items: center; }
+.compose-foot { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; min-height: 18px; }
+.compose-status { font-size: 12px; color: var(--muted); }
+.compose-status.sent { color: var(--ok); }
+.keys-toggle summary { cursor: pointer; font-size: 12px; color: var(--muted); list-style: none; text-align: right; }
+.keys-toggle summary::-webkit-details-marker { display: none; }
+.keys-toggle[open] summary { margin-bottom: 6px; }
+.key.busy { border-color: var(--accent); }
+/* Prompt box: one line, grows with its text */
+.compose-box { align-items: flex-end; }
+.compose-box textarea { resize: none; overflow-y: auto; line-height: 1.4; min-height: 0; }
+button.send { height: 38px; }
+button.stop { height: 38px; min-width: 72px; display: grid; place-items: center; white-space: nowrap; color: #ff8a80; border-color: rgba(255,138,128,0.45); }
+button.stop:hover:not(:disabled) { border-color: #ff8a80; background: rgba(255,138,128,0.1); }
+
+/* Phones: thumb-sized key buttons (44px is the usual minimum touch target) */
+@media (pointer: coarse), (max-width: 700px) {
+  .keys { gap: 8px; }
+  .keys .key { min-width: 56px; height: 44px; padding: 0 12px; font-size: 16px; border-radius: 8px; }
+  .keys-toggle summary { padding: 8px 4px; font-size: 13px; }
+}

@@ -1,0 +1,9 @@
+/* Worktree diff pane */
+.wt-diff { flex: 1; min-height: 0; min-width: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
+.wt-diff-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; position: sticky; top: 0; z-index: 2; background: var(--bg); padding-bottom: 4px; }
+.wt-diff-bar select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 12.5px; max-width: 100%; }
+.wt-diff-bar .seg { flex: 1; min-width: 0; }
+.wt-diff-bar .seg button { padding: 5px 8px; font-size: 12.5px; }
+.wt-diff-label { padding: 0 2px; overflow-wrap: anywhere; }
+.wt-diff .pr-files > * { min-width: 0; max-width: 100%; }
+.wt-diff .pr-file-head { top: 36px; }

@@ -1,0 +1,48 @@
+{
+  "id": "workspace-setup",
+  "apiVersion": 1,
+  "title": "Workspace setup",
+  "description": "New workspace from a ticket or a prompt: an explorer session picks repos, creates and records worktrees, writes a plan and waits",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "explorerModel",
+      "label": "Explorer model",
+      "type": "select",
+      "description": "The model of the session that sets up a new workspace.",
+      "options": [
+        {
+          "value": "fable",
+          "label": "fable"
+        },
+        {
+          "value": "opus",
+          "label": "opus"
+        },
+        {
+          "value": "sonnet",
+          "label": "sonnet"
+        },
+        {
+          "value": "haiku",
+          "label": "haiku"
+        }
+      ],
+      "default": "opus",
+      "env": "WORK_HUB_EXPLORER_MODEL",
+      "restart": true
+    },
+    {
+      "key": "jiraBaseUrl",
+      "label": "Jira base URL",
+      "type": "string",
+      "description": "Used to recognise and link ticket keys.",
+      "default": "",
+      "placeholder": "https://your-site.atlassian.net",
+      "env": "TW_JIRA_BASE_URL"
+    }
+  ],
+  "settingsOrder": 60
+}

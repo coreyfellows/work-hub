@@ -1,0 +1,9 @@
+/* Hand-off and New session forms (both in a `.modal-form` modal). */
+.handoff-box { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.handoff-box textarea { width: 100%; box-sizing: border-box; font: inherit; resize: vertical; }
+.new-session-fields { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.new-session-fields label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.new-session-fields label.grow { flex: 1 1 160px; }
+.new-session-fields select, .new-session-fields input { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 13px; max-width: 100%; }
+.handoff-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.modal-form .handoff-box { margin: 0; padding: 12px; }

@@ -1,0 +1,9 @@
+{
+  "id": "live-terminal",
+  "apiVersion": 1,
+  "title": "Live terminal",
+  "description": "A session's Terminal view: a live `claude attach` streamed into xterm.js over a WebSocket, with a `claude logs` snapshot as the fallback",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx"
+}

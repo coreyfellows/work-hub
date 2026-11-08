@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>work-hub · sign in</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0e1013; color: #d8dee6; font: 15px -apple-system, sans-serif; }
+      main { display: flex; flex-direction: column; gap: 12px; width: min(340px, 86vw); }
+      h1 { margin: 0 0 6px; font-size: 22px; }
+      input, button { font: inherit; font-size: 16px; padding: 12px; border-radius: 9px; border: 1px solid #262c35; background: #161a1f; color: inherit; }
+      button { cursor: pointer; }
+      button.primary { background: #1f3a5f; border-color: #2c5285; }
+      form { display: flex; flex-direction: column; gap: 8px; }
+      details summary { color: #7d8794; cursor: pointer; font-size: 13px; margin-bottom: 8px; }
+      #msg { color: #ef6b6b; min-height: 1.2em; font-size: 13px; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>work-hub</h1>
+      <button id="passkey" class="primary" hidden>Sign in with passkey</button>
+      <details id="token-box">
+        <summary>Use access token</summary>
+        <form id="token-form">
+          <input id="token" type="password" placeholder="Access token" autocomplete="current-password" />
+          <button>Sign in</button>
+        </form>
+      </details>
+      <div id="msg"></div>
+      <p style="color:#7d8794;font-size:12px;margin:0">New device? On a signed-in device, open Settings → Other devices → <b>Sign in another device</b> and scan the QR code.</p>
+    </main>
+    <script type="module" src="./login.ts"></script>
+  </body>
+</html>

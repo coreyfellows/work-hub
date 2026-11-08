@@ -1,0 +1,102 @@
+{
+  "id": "github",
+  "apiVersion": 1,
+  "title": "GitHub",
+  "description": "Pull request lists, the in-app PR preview (conversation, files, checks, merge) and PR sessions, through gh",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "host",
+      "label": "GitHub host",
+      "type": "string",
+      "description": "Empty uses the host `gh` is signed in to.",
+      "placeholder": "github.com",
+      "env": "WORK_HUB_GH_HOST",
+      "restart": true
+    },
+    {
+      "key": "intervalMs",
+      "label": "How often to refresh PRs (ms)",
+      "type": "number",
+      "default": 120000,
+      "min": 30000,
+      "max": 3600000,
+      "env": "WORK_HUB_GH_INTERVAL_MS",
+      "restart": true
+    },
+    {
+      "key": "mergedDays",
+      "label": "Show merged PRs from the last (days)",
+      "type": "number",
+      "default": 7,
+      "min": 1,
+      "max": 90,
+      "env": "WORK_HUB_GH_MERGED_DAYS",
+      "restart": true
+    },
+    {
+      "key": "modelMine",
+      "label": "Model for starting a session on my PR",
+      "type": "select",
+      "options": [
+        {
+          "value": "fable",
+          "label": "fable"
+        },
+        {
+          "value": "opus",
+          "label": "opus"
+        },
+        {
+          "value": "sonnet",
+          "label": "sonnet"
+        },
+        {
+          "value": "haiku",
+          "label": "haiku"
+        }
+      ],
+      "default": "sonnet",
+      "env": "WORK_HUB_PR_MODEL_MINE",
+      "restart": true
+    },
+    {
+      "key": "modelReview",
+      "label": "Model for reviewing a PR",
+      "type": "select",
+      "options": [
+        {
+          "value": "fable",
+          "label": "fable"
+        },
+        {
+          "value": "opus",
+          "label": "opus"
+        },
+        {
+          "value": "sonnet",
+          "label": "sonnet"
+        },
+        {
+          "value": "haiku",
+          "label": "haiku"
+        }
+      ],
+      "default": "opus",
+      "env": "WORK_HUB_PR_MODEL_REVIEW",
+      "restart": true
+    },
+    {
+      "key": "jiraBaseUrl",
+      "label": "Jira base URL",
+      "type": "string",
+      "description": "Turns a ticket key in a branch or title into a link.",
+      "default": "",
+      "placeholder": "https://your-site.atlassian.net",
+      "env": "TW_JIRA_BASE_URL"
+    }
+  ],
+  "settingsOrder": 60
+}

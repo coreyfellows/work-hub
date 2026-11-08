@@ -1,0 +1,20 @@
+/* Git operations from Bash calls (GitCard.tsx): edit-card look with a git-orange edge. */
+.git-ops { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.edit-card.git-card { border-left: 3px solid #f0883e; } /* doubled class: wins over .edit-card whichever stylesheet loads last */
+.git-card .git-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 6px 10px 6px 24px; }
+.git-icon { color: #f0883e; font-size: 12px; }
+.git-sha { font: 11.5px var(--mono); color: #f0b072; }
+.git-subject { color: #e6e6e6; overflow-wrap: anywhere; min-width: 0; }
+.git-body { border-top: 1px solid #262b33; padding: 6px 10px; display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto; }
+.modal .git-body { border-top: 0; max-height: none; padding: 10px 12px; }
+.git-commit-head { font-size: 12px; color: #c9d1d9; overflow-wrap: anywhere; }
+.git-files { list-style: none; margin: 0; padding: 0; font: 11.5px/1.5 var(--mono); }
+.git-files li { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.git-path { color: #c9d1d9; overflow-wrap: anywhere; min-width: 0; }
+.git-ref { font: 11.5px var(--mono); color: #8b94a1; overflow-wrap: anywhere; }
+
+/* The commit / group modal: a picker over commits or actions above the file browser. */
+.git-modal-col { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
+.git-modal-top { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border-bottom: 1px solid #262b33; max-height: 30%; overflow: auto; flex: none; }
+.git-pick { all: unset; cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 12px; overflow-wrap: anywhere; }
+.git-pick:hover { background: #1e232a; } .git-pick.sel { background: #243041; }

@@ -1,0 +1,12 @@
+/* Permission prompt card: sits in the prompt box like the question form (.qform-slot, from questions/styles.css). */
+.permform { border: 1px solid #8a6d2c; background: rgba(255, 196, 87, 0.06); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+.permform .qform-title { color: var(--warn, #e0b450); }
+.permform-body { margin: 0; padding: 8px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30vh; overflow-y: auto; }
+.permform-q { font-weight: 600; }
+.permform-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.permform-options button { min-width: 0; text-align: left; white-space: normal; }
+
+/* Settings → Session permissions */
+.allowlist { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.allowlist-rules { width: 100%; box-sizing: border-box; font-family: var(--mono, ui-monospace, monospace); font-size: 12px; resize: vertical; white-space: pre; overflow-x: auto; }
+.allowlist-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

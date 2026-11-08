@@ -1,0 +1,6 @@
+{
+  "name": "work-hub-menagerie",
+  "version": "0.2.0",
+  "description": "work-hub's resident hosts in the terminal: a greeting, an occasional aside in the host's voice, their spinner words and /fun. Reads the cast work-hub generated; does nothing without one.",
+  "types": "./types/index.d.ts"
+}

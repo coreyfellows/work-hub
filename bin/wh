@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Wrapper so agents and humans can run `~/repos/work-hub/bin/wh …` from anywhere.
+set -euo pipefail
+DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+exec node --no-warnings "$DIR/scripts/wh.ts" "$@"

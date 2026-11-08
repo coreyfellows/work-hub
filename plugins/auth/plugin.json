@@ -1,0 +1,26 @@
+{
+  "id": "auth",
+  "apiVersion": 1,
+  "title": "Sign-in (LAN access)",
+  "description": "Token sign-in, pairing QR codes and passkeys, for serving the app on a hostname beyond this machine. Off by default: localhost needs no sign-in. Required when WORK_HUB_HOSTNAME is set.",
+  "defaultEnabled": false,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "webEntries": {
+    "login": "login.html"
+  },
+  "settings": [
+    {
+      "key": "sessionDays",
+      "label": "Stay signed in (days)",
+      "type": "number",
+      "description": "How long a device stays signed in after it signs in.",
+      "default": 7,
+      "min": 1,
+      "max": 365,
+      "env": "WORK_HUB_SESSION_DAYS",
+      "restart": true
+    }
+  ],
+  "settingsOrder": 60
+}

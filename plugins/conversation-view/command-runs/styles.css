@@ -1,0 +1,46 @@
+/* Commands Claude hands you to run (`! …`; CommandCard.tsx) and the ones you ran. */
+.cmd-card { border: 1px solid #2f5a3c; border-left: 3px solid var(--ok); border-radius: 8px; background: #13191a; padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; min-width: 0; max-width: 100%; margin: 6px 0; }
+.cmd-card.queued { border-left-color: var(--warn); }
+.cmd-card.sending, .cmd-card.running { border-left-color: var(--accent, #6aa9ff); }
+.cmd-card.sending, .cmd-card.queued, .cmd-card.running { animation: cmd-pulse 1.6s ease-in-out infinite; }
+@keyframes cmd-pulse { 50% { background: #172023; } }
+.cmd-spin { display: inline-block; vertical-align: -2px; width: 10px; height: 10px; margin-right: 3px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.cmd-card.error { border-left-color: var(--bad); }
+.cmd-line, .shell-head { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.cmd-bang { font-family: var(--mono); font-weight: 700; color: var(--ok); flex: none; }
+.cmd-text { font-family: var(--mono); font-size: 12.5px; color: #e8e8e8; background: none; padding: 0; overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; flex: 1; }
+.cmd-actions { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.cmd-actions button { font-size: 12px; padding: 4px 11px; }
+button.cmd-run { background: #1d3b29; border-color: #2f6b45; color: #d9f5e3; font-weight: 600; }
+button.cmd-run:hover:not(:disabled) { border-color: var(--ok); }
+button.cmd-term { background: #1b2a3d; border-color: #2c5285; color: #dce9fb; }
+.cmd-status { font-size: 11.5px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.cmd-status button.link { padding: 0; font-size: inherit; }
+.shell-card { border: 1px solid #343a44; border-radius: 8px; background: #111418; color: #d8dee6; min-width: 0; max-width: 100%; overflow: hidden; text-align: left; }
+.shell-card.err { border-color: rgba(239, 107, 107, 0.45); }
+.shell-head { padding: 6px 10px; background: #181c22; border-bottom: 1px solid #262c35; flex-wrap: wrap; row-gap: 4px; }
+/* The command keeps at least ~16 characters of room; on a narrow screen the buttons wrap under it. */
+.shell-head .cmd-text { flex: 1 1 16ch; }
+.shell-head button.cmd-copy { font-size: 11px; padding: 1px 8px; flex: none; }
+.shell-out { margin: 0; padding: 7px 10px; font-family: var(--mono); font-size: 12px; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.shell-out.muted { color: var(--muted); }
+button.link.shell-more { padding: 2px 10px 7px; font-size: 11.5px; }
+/* Output wraps inside the card (a long line would otherwise widen the bubble past the window); the card takes the
+   bubble's full width so short lines don't leave it skinny. */
+.msg-group.user:has(.shell-card) { width: 85%; }
+.msg-group.user:has(.shell-card) .bubble { width: 100%; box-sizing: border-box; }
+.msg-group.user .bubble-part:has(> .shell-card) { width: 100%; min-width: 0; }
+.h-shell .h-text { min-width: 0; }
+@media (max-width: 700px) { .msg-group.user:has(.shell-card) { width: 100%; max-width: 100%; } }
+.h-shell .h-prompt { color: var(--ok); }
+.shell-head button.cmd-view { font-size: 11px; padding: 1px 8px; flex: none; }
+.out-head { display: inline-flex; gap: 6px; align-items: baseline; min-width: 0; }
+.out-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 8px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid #262c35; }
+.out-meta button.cmd-copy { font-size: 11.5px; padding: 3px 10px; margin-left: auto; }
+.out-empty { padding: 14px; }
+.out-view { display: flex; min-width: 0; overflow: auto; background: #0a0c0f; font: 12px/1.45 var(--mono); max-height: calc(100vh - 160px); }
+.out-view pre { margin: 0; padding: 8px 10px; font: inherit; white-space: pre; }
+.out-ln { flex: none; text-align: right; color: #59606b; user-select: none; border-right: 1px solid #1e232a; position: sticky; left: 0; background: #0a0c0f; }
+.out-src { flex: 1; min-width: 0; background: transparent !important; }
+.shell-wait { display: flex; align-items: center; gap: 10px; color: var(--muted); white-space: normal; }
+.cmd-spin.big { width: 16px; height: 16px; margin: 0; }
