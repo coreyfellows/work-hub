@@ -44,6 +44,8 @@ exit 0`,
   caddy: 'exit 0',
   mkcert: `while [ $# -gt 0 ]; do case "$1" in -cert-file) echo cert > "$2"; shift ;; -key-file) echo key > "$2"; shift ;; esac; shift; done`,
   silverbullet: 'exit 0',
+  // setup.sh's sign-in check: signed in unless the test says otherwise ($STUB_DIR/logged-out).
+  claude: `if [ "$1" = auth ]; then if [ -e "$STUB_DIR/logged-out" ]; then echo '{"loggedIn": false}'; else echo '{"loggedIn": true}'; fi; fi; exit 0`,
   'code-cli': 'exit 0',
   // update.sh pulls; nothing here may touch the real checkout's refs.
   // An upstream exists only when the test says so ($STUB_DIR/upstream).
@@ -574,5 +576,117 @@ test('linux: share-ca copies only the certificate to XDG_DOWNLOAD_DIR and opens 
     r = run('scripts/share-ca.sh', [], { WORK_HUB_CA_CERT: ca, XDG_DOWNLOAD_DIR: downloads });
     assert.equal(r.code, 1, r.out);
     assert.match(r.out, /contains a private key; refusing/);
+  });
+});
+
+// --- scripts/setup.sh: a fresh clone to a running localhost app ---------------------------------------------------
+
+const pnpmCalls = (stub: string) => (existsSync(join(stub, 'pnpm-calls')) ? readFileSync(join(stub, 'pnpm-calls'), 'utf8') : '');
+
+test('setup.sh dry run: checks pass, says what --apply does, touches nothing', { skip: !isMac && 'macOS only' }, () => {
+  withEnv(({ agents, stub, run }) => {
+    const r = run('scripts/setup.sh', []);
+    assert.equal(r.code, 0, r.out);
+    assert.match(r.out, /✓ claude CLI, signed in/);
+    assert.match(r.out, new RegExp(`install the background service ${PREFIX} .*http://127\\.0\\.0\\.1:47001`));
+    assert.match(r.out, /Run: scripts\/setup\.sh --apply/);
+    assert.equal(calls(stub), '');
+    assert.equal(pnpmCalls(stub), '');
+    assert.ok(!existsSync(join(agents, `${PREFIX}.plist`)));
+  });
+});
+
+test('setup.sh: claude signed out is listed with its fix; --apply then refuses before installing anything', { skip: !isMac && 'macOS only' }, () => {
+  withEnv(({ stub, run }) => {
+    writeFileSync(join(stub, 'logged-out'), '');
+    let r = run('scripts/setup.sh', []);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.out, /✗ claude isn't signed in — run `claude` once in a terminal and sign in/);
+    r = run('scripts/setup.sh', ['--apply']);
+    assert.equal(r.code, 1, r.out);
+    assert.equal(pnpmCalls(stub), '');
+    assert.equal(calls(stub), '');
+  });
+});
+
+test('setup.sh: a port already taken (no agent of ours) is listed with WORK_HUB_PORT as the fix', { skip: !isMac && 'macOS only' }, () => {
+  withEnv(({ stub, run }) => {
+    writeFileSync(join(stub, 'listening'), '');
+    const r = run('scripts/setup.sh', []);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.out, /port 47001 is already in use .*WORK_HUB_PORT/);
+  });
+});
+
+test('setup.sh --apply installs, builds, writes a stamped localhost plist (no hostname), loads it and waits', { skip: !isMac && 'macOS only' }, () => {
+  withEnv(({ agents, stub, run }) => {
+    const r = run('scripts/setup.sh', ['--apply']);
+    assert.equal(r.code, 0, r.out);
+    assert.equal(pnpmCalls(stub), 'install --frozen-lockfile\nbuild\n');
+    const plist = join(agents, `${PREFIX}.plist`);
+    assert.equal(plistValue(plist, 'EnvironmentVariables.WORK_HUB_REPO'), REPO);
+    assert.equal(plistValue(plist, 'EnvironmentVariables.WORK_HUB_PORT'), '47001');
+    assert.equal(plistValue(plist, 'EnvironmentVariables.NODE_ENV'), 'production');
+    assert.throws(() => plistValue(plist, 'EnvironmentVariables.WORK_HUB_HOSTNAME'));
+    assert.equal(plistValue(plist, 'ProgramArguments.1'), join(REPO, 'server', 'index.ts'));
+    assert.match(calls(stub), new RegExp(`bootstrap gui/\\d+ ${plist.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(r.out, /work-hub is running: open http:\/\/127\.0\.0\.1:47001/);
+  });
+});
+
+test('setup.sh --apply keeps this checkout\'s existing agent as it is (e.g. LAN mode) and restarts it', { skip: !isMac && 'macOS only' }, () => {
+  withEnv(({ agents, stub, run }) => {
+    const before = stubPlist(agents, PREFIX, REPO);
+    writeFileSync(join(stub, `loaded-${PREFIX}`), '');
+    writeFileSync(join(stub, 'listening'), '');
+    const r = run('scripts/setup.sh', ['--apply']);
+    assert.equal(r.code, 0, r.out);
+    assert.equal(readFileSync(join(agents, `${PREFIX}.plist`), 'utf8'), before);
+    assert.match(calls(stub), new RegExp(`kickstart -k gui/\\d+/${PREFIX}\\n`));
+    assert.doesNotMatch(calls(stub), /bootstrap/);
+  });
+});
+
+test('setup.sh refuses an agent of another checkout (touching nothing); --adopt takes it over', { skip: !isMac && 'macOS only' }, () => {
+  withEnv(({ agents, stub, run }) => {
+    const before = stubPlist(agents, PREFIX, FOREIGN);
+    let r = run('scripts/setup.sh', ['--apply']);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.out, /belongs to another checkout/);
+    assert.equal(readFileSync(join(agents, `${PREFIX}.plist`), 'utf8'), before);
+    assert.equal(calls(stub), '');
+    r = run('scripts/setup.sh', ['--apply', '--adopt']);
+    assert.equal(r.code, 0, r.out);
+    assert.equal(plistValue(join(agents, `${PREFIX}.plist`), 'EnvironmentVariables.WORK_HUB_REPO'), REPO);
+    assert.match(calls(stub), new RegExp(`bootout gui/\\d+/${PREFIX}\\nbootstrap `));
+    assert.doesNotMatch(calls(stub), /kickstart/);
+  });
+});
+
+test('setup.sh --uninstall removes its own agent and refuses another checkout\'s', { skip: !isMac && 'macOS only' }, () => {
+  withEnv(({ agents, stub, run }) => {
+    stubPlist(agents, PREFIX, REPO);
+    let r = run('scripts/setup.sh', ['--uninstall']);
+    assert.equal(r.code, 0, r.out);
+    assert.ok(!existsSync(join(agents, `${PREFIX}.plist`)));
+    assert.match(calls(stub), new RegExp(`bootout gui/\\d+/${PREFIX}\\n`));
+    stubPlist(agents, PREFIX, FOREIGN);
+    r = run('scripts/setup.sh', ['--uninstall']);
+    assert.equal(r.code, 1, r.out);
+    assert.ok(existsSync(join(agents, `${PREFIX}.plist`)));
+  });
+});
+
+test('linux: setup.sh --apply writes a stamped localhost unit and starts it with systemctl --user', () => {
+  withLinux(({ agents, stub, run }) => {
+    const r = run('scripts/setup.sh', ['--apply']);
+    assert.equal(r.code, 0, r.out);
+    const unit = join(agents, `${PREFIX}.service`);
+    assert.equal(unitLines(unit, 'Environment')[0], `"WORK_HUB_REPO=${REPO}"`);
+    assert.ok(unitLines(unit, 'Environment').includes('"WORK_HUB_PORT=47001"'));
+    assert.ok(!unitLines(unit, 'Environment').some((l) => l.includes('WORK_HUB_HOSTNAME')));
+    assert.match(unitLines(unit, 'ExecStart')[0]!, new RegExp(`^"[^"]*node" "${REPO}/server/index\\.ts"$`));
+    assert.match(sdCalls(stub), new RegExp(`--user enable --now ${PREFIX}\\.service\\n`));
+    assert.equal(calls(stub), '');
   });
 });

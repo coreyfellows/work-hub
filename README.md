@@ -15,19 +15,20 @@ you're the first to set it up there, expect to fix things: please commit the fix
 
 ## Run it
 
-Needs Node 26, pnpm, and the `claude` CLI (signed in). `gh` (signed in) for the GitHub features.
+The easy way: clone it, open Claude Code in the folder and say **"set this repo up"**. Or do it yourself:
 
 ```sh
 git clone <this repo> work-hub && cd work-hub
-pnpm install
-pnpm dev                     # http://127.0.0.1:4849 (hot reload; the API is on 4848)
-# or
-pnpm build && pnpm start     # http://127.0.0.1:4848
+scripts/setup.sh             # checks what's needed and says how to fix anything missing
+scripts/setup.sh --apply     # installs, builds, and runs it in the background on http://127.0.0.1:4848
 ```
 
-Open the URL in a browser on the same Mac. The first time, it asks where your repos are cloned and where worktrees
-should go (defaults `~/repos` and `~/worktrees`); both stay editable in Settings → Folders, and the env vars
-`WORK_HUB_REPOS_DIR` / `TW_WORKTREES_ROOT` still override them. The first time, it asks where your repos are cloned and where worktrees
+It needs Node 26, pnpm, git, python3 and the `claude` CLI (signed in); `gh` (signed in) for the GitHub features. The
+background service (a launchd agent on macOS, a systemd user unit on Linux) starts it again at every login;
+`scripts/update.sh` updates it after a `git pull`, and `scripts/setup.sh --uninstall` removes the service. To work on
+it instead: `pnpm install && pnpm dev` (http://127.0.0.1:4849, hot reload; the API is on 4848).
+
+Open the URL in a browser on the same machine. The first time, it asks where your repos are cloned and where worktrees
 should go (defaults `~/repos` and `~/worktrees`); both stay editable in Settings → Folders, and the env vars
 `WORK_HUB_REPOS_DIR` / `TW_WORKTREES_ROOT` still override them. There's no login in this mode: only this machine can reach it, which
 means every process and every macOS account on this Mac can use it (and drive your Claude sessions). Turn on the auth

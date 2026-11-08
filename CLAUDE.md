@@ -9,6 +9,29 @@ You are working for the user, on their checkout. Nothing user-specific is tracke
 local plugin paths, settings, hostname and sign-in live in their config and state dirs, so `git pull` never conflicts
 with their setup. Keep it that way (no personal hostnames, labels, paths or accounts in tracked files).
 
+## Setting it up ("set this repo up", "get this running", "install it")
+
+When the user asks to set up, install or run work-hub, get it running end to end without making them do anything you
+can do yourself; they may know nothing about Node, pnpm or launchd. Don't change code, plugins or settings for this.
+
+1. Run `scripts/setup.sh` (a dry run: checks Node 26+, pnpm, git, python3, the `claude` CLI signed in, gh optional, the
+   port and the background service). It lists each missing thing with the command that fixes it.
+2. Fix what's missing yourself with those commands (`brew install node`, `corepack enable pnpm`, `brew install gh`…;
+   on Linux the package manager may need sudo, so ask first). What needs the user's own login or password can't be
+   done from here; tell them exactly what to type in a terminal and wait: installing Homebrew when a fix needs `brew`
+   and it's missing (the install line from https://brew.sh), signing in to Claude (`claude`, then `/login`), and
+   optionally `gh auth login` for the GitHub features. "Port 4848 in use": find what holds it
+   (`lsof -nP -iTCP:4848 -sTCP:LISTEN`); if it's another work-hub or something they need, re-run with
+   `WORK_HUB_PORT=<free port>` (e.g. 4850) and use that port from then on. Re-run the dry run until nothing is missing.
+3. Run `scripts/setup.sh --apply`: installs, builds, and runs the app as a background service on
+   http://127.0.0.1:4848 that starts at login (launchd on macOS, a systemd user unit on Linux), then waits for it. If it
+   fails, read the log it names and fix the cause. On Windows there's no setup.sh: follow `docs/windows.md`.
+4. Tell the user, in plain words: open http://127.0.0.1:4848 in a browser on this machine; the first visit asks where
+   their repos are cloned and where worktrees go (defaults `~/repos` and `~/worktrees`, fine to accept); it keeps running
+   in the background; `scripts/update.sh` updates it after a `git pull`; `scripts/setup.sh --uninstall` removes the
+   service. Optional extras, only if they ask: GitHub features (`gh auth login`), the Note and Code tabs (each plugin's
+   `setup/SETUP.md`), phones and other devices (`scripts/setup-lan.sh`, needs a hostname).
+
 ## Layout
 
 - `server/`: the core. `index.ts` (Hono app: guard, SSE stream, core routes, static UI in production), `registry.ts`
@@ -342,6 +365,8 @@ Each lives in `plugins/<id>/` with its own README (what it does, routes, slots, 
 
 ## Commands
 
+- `scripts/setup.sh [--apply] [--no-service] [--uninstall]`: a fresh clone to a running app (see "Setting it up"):
+  checks, install, build, a localhost background service on 4848. Dry run by default.
 - `pnpm install`, then `pnpm dev`: API with `--watch` on 127.0.0.1:4848 and Vite with hot reload on
   http://127.0.0.1:4849.
 - `pnpm build && pnpm start`: the production build, served at http://127.0.0.1:4848.
