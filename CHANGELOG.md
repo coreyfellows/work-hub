@@ -62,6 +62,7 @@ JSON, so Node, Vite and scripts read it without running code (`PluginManifest` i
 | `webEntries` | object | extra HTML pages built beside the app (name → HTML file in the plugin folder, e.g. `{ "login": "login.html" }`), built to `dist/plugin-entries/<name>.html` while the plugin is active; the plugin serves them itself |
 | `skills` | string | a folder of Claude Code skill folders (`<name>/SKILL.md`); while the plugin is active they are `/work-hub:<name>` in every session the app starts (added 2026-11-06) |
 | `aliases` | string[] | former ids, so config saved under an old id still applies |
+| `claudeVersion` | string | the Claude Code version the plugin was last updated for (claude-monitor reads it; added 2026-11-08) |
 
 ### Server: `ServerPluginContext`
 
@@ -194,6 +195,43 @@ A plugin may also use slot names of its own (any other string), or type one by a
 
 Additive changes to 1.0 (still API 1: nothing to migrate), newest first, with the date.
 
+- 2026-11-08 (Claude Code updates): manifest `claudeVersion?: string`, the Claude Code version (`x.y.z`) the plugin
+  was last brought up to date with. The core doesn't read it; the claude-monitor plugin only suggests changes from newer
+  Claude Code releases, and the sessions it starts to update a plugin set it. Additive: no version bump, nothing to
+  migrate.
+- 2026-11-08 (source control in the workspace model): `Worktree.vcs` (its provider id: `git`, `folder`, a plugin's
+  id) and `Workspace.vcs` (the workspace's chosen provider, null = not chosen). `Worktree.repo` is now `string | null`:
+  a plain folder has no repo, and another provider's copy may have none. **Local plugins:** handle a null `repo` (it
+  was always a string), e.g. skip the row or fall back to `copyLabel(t)`, and check `vcs === 'git'` before running git
+  in a recorded worktree. `ctx.store.addWorktree(id, { path, vcs?, repo?, branch?, baseBranch? })` takes `vcs`
+  (default `git`) and an optional `repo`; `allWorktrees()` rows gain `vcs`; `findWorkspaceByWorktree`'s repo + branch
+  match only considers git rows (a path still matches any kind). The core `GET /api/workspaces/:id/worktrees` route's
+  rows (`WorktreeInfo`) gain `vcs`.
+- 2026-11-08 (Web display for non-git copies): `copyLabel(t)` and `copyLabelText(t)` (and the `CopyLike` type) in
+  `plugin-api/web.ts` and `plugin-api/server.ts`: how a working copy reads, `{ name, detail }` (a git copy is its repo
+  name and `@branch`; a plain folder its folder name; another provider's copy its folder name and `<vcs> <branch>`).
+  The `workspace-panel` slot item takes an optional `available(workspace)` to hide its tab where it doesn't apply
+  (the Diff tab: a git copy, or no copies yet in a git or not-yet-chosen workspace).
+- 2026-11-08 (New workspace: source control and folders): `ctx.paths.plainDir` (the plain workspaces root, read on
+  use), `ctx.vcs.effectiveDefault()` (Settings → Source control's default id, or null for Detect or an unregistered
+  one), and the exported helpers `expandFolder` and `folderTrustError` in `plugin-api/server.ts`. `ctx.store`'s
+  `createWorkspace({ vcs })`, `setWorkspaceVcs`, `trustFolder` and `isTrustedFolder` are there for plugins too, and the
+  new `deleteWorkspace(id)` (the record and everything under it, never files: for undoing a half-made workspace). Core
+  `GET /api/vcs` (revalidated) answers `{ providers: [{ id, title, experimental }], default }`. `ConfirmPopover` was
+  already in `plugin-api/web.ts`.
+- 2026-11-08 (plain folders): `ctx.sessions.trustWorktree` also accepts a folder under Settings → Folders' "Plain
+  workspaces" root (`config.paths.plain`, env `WORK_HUB_PLAIN_DIR`, default `~/workspaces`; only while that root
+  itself passes `folderTrustError`) and a folder the user confirmed (`trusted_folders`). The New workspace form confirms
+  through `POST /api/workspaces { …, confirmFolder: true }` (which calls `store.trustFolder`); core
+  `POST /api/trusted-folders { path }` (guarded, tested) does the same for plugins and scripts. Settings → Source control (`vcs.default`) is the default provider
+  id for `ctx.vcs.detect`'s `prefer`; `detect`, or a provider that isn't registered, means no preference.
+- 2026-11-08 (source-control providers): `ctx.vcs` (`register`, `get`, `list`, `detect(path, { prefer? })`) and the
+  types `SourceControlProvider`, `WorkingCopyState`, `AgentInstructionOpts`. The core registers `git` and `folder` (a
+  plain directory: no identity or line, removing it only forgets the record); a plugin's providers are taken back if
+  its `register()` throws. `detect` asks `prefer` first, then git, jj, hg, p4, the rest, folder last.
+- 2026-11-08 (source-control providers): `PromptContext.kinds` for `workspace-rules` and `session-context` fragments:
+  the workspace's source-control kinds (its chosen vcs, then its copies', deduped; `['git']` when none). Workspace
+  rules end with each non-git kind's `agentInstructions`; a git-only workspace's rules read exactly as before.
 - 2026-11-08 (no built-in MCP gateway): `askClaudeJson` takes `mcp: { name, url }` (types `HeadlessMcp`,
   `HeadlessOptions`) for the one MCP server a run may use, gated per server. A call without it now runs with no tools;
   it used to default to one company's MCP gateway, whose plugins (and the old `tools` value and `mcpUrl` option)

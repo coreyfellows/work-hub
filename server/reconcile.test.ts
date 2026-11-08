@@ -23,6 +23,19 @@ test('ownerByCwd: falls back to a unique repo + branch, never a shared branch', 
   assert.equal(ownerByCwd('/repos/site-src', 'org/site-src', 'f-TKT-1', dup), null, 'ambiguous');
 });
 
+test('ownerByCwd: a non-git record matches by path, never by repo + branch', () => {
+  const recs: WorktreeRec[] = [
+    { workspaceId: 'j', vcs: 'jj', repo: 'org/site-src', path: '/w/jj/TKT-2', branch: 'f-TKT-2' },
+    { workspaceId: 'f', vcs: 'folder', repo: null, path: '/p/notes', branch: null },
+  ];
+  assert.equal(ownerByCwd('/w/jj/TKT-2/sub', 'org/site-src', 'f-TKT-2', recs), 'j');
+  assert.equal(ownerByCwd('/p/notes', null, null, recs), 'f');
+  assert.equal(ownerByCwd('/repos/site-src', 'org/site-src', 'f-TKT-2', recs), null);
+  // A git record with the same repo + branch still matches; the jj one doesn't make it ambiguous.
+  const both = [...recs, { workspaceId: 'g', vcs: 'git', repo: 'org/site-src', path: '/w/site-src/TKT-2', branch: 'f-TKT-2' }];
+  assert.equal(ownerByCwd('/repos/site-src', 'org/site-src', 'f-TKT-2', both), 'g');
+});
+
 test('spawnedIds: only the whole line claude --bg prints', () => {
   const out = '  claude attach ddb63d29    open in this terminal\n  claude logs ddb63d29      show recent output\n  claude stop ddb63d29      stop this session';
   assert.deepEqual(spawnedIds(out), ['ddb63d29']);

@@ -44,3 +44,16 @@ test('linkPrsPass: job children and branch matches, never a shared branch or an 
     { ws: 'ws1', url: 'https://gh/o/app/pull/1', label: 'app#1' },
   ]);
 });
+
+test('linkPrsPass: a copy with no repo (a folder, jj, hg, p4) never claims a PR', async () => {
+  const links: string[] = [];
+  const store = {
+    sessionOwners: () => new Map(),
+    allWorktrees: () => [{ workspaceId: 'ws1', vcs: 'jj', repo: null, path: '/w/copy', branch: 'feat-a' }],
+    linkedUrls: () => new Set<string>(),
+    addLink: (_ws: string, l: { url: string }) => void links.push(l.url),
+    logEvent: () => {},
+  };
+  assert.equal(await linkPrsPass(() => [pr({})], mkdtempSync(join(tmpdir(), 'gh-jobs-')))({ sessions: [], store } as never), false);
+  assert.deepEqual(links, []);
+});

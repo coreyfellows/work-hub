@@ -31,10 +31,12 @@ function workspacePrs(ws: Workspace, sources: Sources): PullRequest[] {
   const github = githubOf(sources);
   const all = [...(github?.mine ?? []), ...(github?.reviewRequested ?? []), ...(github?.merged ?? [])];
   return all
-    .filter((p) => ws.worktrees.some((t) => t.branch === p.branch && t.repo.toLowerCase() === p.repo.toLowerCase()))
+    .filter((p) => ws.worktrees.some((t) => isGitCopy(t) && t.branch === p.branch && t.repo?.toLowerCase() === p.repo.toLowerCase()))
     .sort((x, y) => Date.parse(x.createdAt) - Date.parse(y.createdAt));
 }
-const prFor = (prs: PullRequest[], t: Worktree) => prs.find((p) => p.branch === t.branch && p.repo.toLowerCase() === t.repo.toLowerCase());
+/** PRs, chips and compare links are git's: a copy of another kind (or one with no repo) never matches. */
+const isGitCopy = (t: Worktree): t is Worktree & { repo: string } => t.vcs === 'git' && !!t.repo;
+const prFor = (prs: PullRequest[], t: Worktree) => !isGitCopy(t) ? undefined : prs.find((p) => p.branch === t.branch && p.repo.toLowerCase() === t.repo?.toLowerCase());
 
 /**
  * Which worktrees' branches have something to put in a PR (by worktree id; false = nothing vs the base, so no
@@ -143,7 +145,7 @@ export default function register(ctx: WebPluginContext): void {
       const github = githubOf(sources);
       const prChanges = data as Record<number, boolean | null>;
       const pr = prFor(workspacePrs(workspace, sources), t);
-      if (!t.branch || !github?.host || !(pr || prChanges[t.id] !== false)) return null;
+      if (!isGitCopy(t) || !t.branch || !github?.host || !(pr || prChanges[t.id] !== false)) return null;
       return pr ? (
         <Link to={`/prs/${pr.repo}/${pr.number}`} className="small-text wt-pr">
           PR #{pr.number}

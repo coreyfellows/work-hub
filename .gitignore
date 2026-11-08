@@ -5,3 +5,4 @@ dist/
 .superpowers/
 web/src/plugins.generated.ts
 web/plugin-entries/
+.wh-*/

@@ -50,7 +50,7 @@ export function linkPrsPass(prs: () => PullRequest[], jobsDir = join(homedir(), 
     }
     for (const pr of prs()) {
       if (SHARED_BRANCHES.has(pr.branch)) continue;
-      const owner = new Set(worktrees.filter((w) => w.branch === pr.branch && w.repo.toLowerCase() === pr.repo.toLowerCase()).map((w) => w.workspaceId));
+      const owner = new Set(worktrees.filter((w) => w.branch === pr.branch && w.repo?.toLowerCase() === pr.repo.toLowerCase()).map((w) => w.workspaceId));
       if (owner.size === 1) link([...owner][0], normUrl(pr.url), `branch ${pr.branch}`);
     }
     return changed;

@@ -54,7 +54,8 @@ test('trustWorktree: adds the entry under the worktrees root, keeps the rest, at
   const configFile = join(base, 'claude.json');
   await writeFile(configFile, JSON.stringify({ numStartups: 3, projects: { '/x': { allowedTools: ['a'] }, [wt]: { lastCost: 1 } } }));
   await chmod(configFile, 0o600);
-  const opts = { configFile, worktreesRoot: root };
+  // isTrusted stubbed so the refusal cases never open the real hub.db.
+  const opts = { configFile, worktreesRoot: root, isTrusted: () => false };
 
   assert.deepEqual(await trustWorktree(wt, opts), { path: wt, changed: true });
   const after = JSON.parse(await readFile(configFile, 'utf8'));
@@ -80,7 +81,74 @@ test('trustWorktree: adds the entry under the worktrees root, keeps the rest, at
   await assert.rejects(trustWorktree(join(base, 'elsewhere'), opts), /outside the worktrees root/);
   await assert.rejects(trustWorktree(root, opts), /outside the worktrees root/);
   await assert.rejects(trustWorktree(join(root, 'missing'), opts), /not a directory/);
-  await assert.rejects(trustWorktree(wt, { configFile: join(base, 'none.json'), worktreesRoot: root }), /not found/);
+  await assert.rejects(trustWorktree(wt, { configFile: join(base, 'none.json'), worktreesRoot: root, isTrusted: () => false }), /not found/);
+});
+
+test('trustWorktree: also accepts the plain root and folders the user confirmed', async () => {
+  const { mkdtemp, mkdir, writeFile, readFile, realpath, rm } = await import('node:fs/promises');
+  const { join } = await import('node:path');
+  const { trustWorktree } = await import('./sessions.ts');
+  // Not under tmpdir: that is /private/var, a refused system folder. The checkout is inside the home folder.
+  const base = await realpath(await mkdtemp(join(process.cwd(), '.wh-trust-plain-')));
+  try {
+    const plain = join(base, 'workspaces');
+    const inPlain = join(plain, 'x');
+    const elsewhere = join(base, 'elsewhere');
+    await mkdir(inPlain, { recursive: true });
+    await mkdir(elsewhere);
+    const configFile = join(base, 'claude.json');
+    await writeFile(configFile, JSON.stringify({ projects: {} }));
+    const opts = { configFile, worktreesRoot: join(base, 'worktrees'), plainRoot: plain };
+
+    assert.deepEqual(await trustWorktree(inPlain, { ...opts, isTrusted: () => false }), { path: inPlain, changed: true });
+    assert.equal(JSON.parse(await readFile(configFile, 'utf8')).projects[inPlain].hasTrustDialogAccepted, true);
+    await assert.rejects(trustWorktree(elsewhere, { ...opts, isTrusted: () => false }), /outside the worktrees root/);
+    await assert.rejects(trustWorktree(plain, { ...opts, isTrusted: () => false }), /outside the worktrees root/);
+    const asked: string[] = [];
+    const confirmed = (p: string) => (asked.push(p), p === elsewhere);
+    assert.deepEqual(await trustWorktree(elsewhere, { ...opts, isTrusted: confirmed }), { path: elsewhere, changed: true });
+    assert.deepEqual(asked, [elsewhere]);
+
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test('trustWorktree: a plain root set to a system folder does not make its contents trustable', async () => {
+  const { mkdtemp, writeFile, realpath, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { trustWorktree } = await import('./sessions.ts');
+  const base = await realpath(await mkdtemp(join(tmpdir(), 'wh-trust-sys-')));
+  try {
+    const configFile = join(base, 'claude.json');
+    await writeFile(configFile, JSON.stringify({ projects: {} }));
+    const opts = { configFile, worktreesRoot: join(base, 'w'), plainRoot: '/usr', isTrusted: () => true };
+    await assert.rejects(trustWorktree('/usr/local', opts), /outside the worktrees root/);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test('trustWorktree: a plain root set to the home folder does not make all of home trustable', async () => {
+  const { mkdtemp, mkdir, writeFile, realpath, rm } = await import('node:fs/promises');
+  const { homedir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { trustWorktree } = await import('./sessions.ts');
+  // Inside the checkout, so inside the home folder.
+  const base = await realpath(await mkdtemp(join(process.cwd(), '.wh-trust-home-')));
+  try {
+    const dir = join(base, 'anything');
+    await mkdir(dir);
+    const configFile = join(base, 'claude.json');
+    await writeFile(configFile, JSON.stringify({ projects: {} }));
+    const opts = { configFile, worktreesRoot: join(base, 'w'), isTrusted: () => false };
+    await assert.rejects(trustWorktree(dir, { ...opts, plainRoot: homedir() }), /outside the worktrees root/);
+    // The same folder under a proper plain root is accepted.
+    assert.deepEqual(await trustWorktree(dir, { ...opts, plainRoot: base }), { path: dir, changed: true });
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
 });
 
 test('mergeSettingsArgs: inline --settings folded into one (Claude keeps only the last), paths and other args untouched', () => {

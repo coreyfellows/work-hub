@@ -12,7 +12,7 @@ interface PrLite {
 function prUrlFor(sources: Sources, t: Worktree): string | undefined {
   const github = sources.github?.data as { mine?: PrLite[]; reviewRequested?: PrLite[]; merged?: PrLite[] } | null | undefined;
   const all = [...(github?.mine ?? []), ...(github?.reviewRequested ?? []), ...(github?.merged ?? [])];
-  return all.find((p) => p.branch === t.branch && p.repo.toLowerCase() === t.repo.toLowerCase())?.url;
+  return all.find((p) => p.branch === t.branch && p.repo.toLowerCase() === t.repo?.toLowerCase())?.url;
 }
 
 export default function register(ctx: WebPluginContext): void {

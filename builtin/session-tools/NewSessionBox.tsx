@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, post, SESSION_MODELS, useToast, type Workspace } from '../../plugin-api/web.ts';
+import { copyLabelText, Modal, post, SESSION_MODELS, useToast, type Workspace } from '../../plugin-api/web.ts';
 
 // "auto" lets the server rate the task's difficulty and pick (sessionPlan.ts).
 const MODELS = ['auto', ...SESSION_MODELS] as const;
@@ -64,7 +64,7 @@ function NewSessionBox({
           <select value={cwd} onChange={(e) => setCwd(e.target.value)} disabled={busy}>
             {ws.worktrees.map((t) => (
               <option key={t.id} value={t.path}>
-                {t.repo.split('/')[1] ?? t.repo} @{t.branch ?? '?'}
+                {copyLabelText(t)}
               </option>
             ))}
             <option value="">~/worktrees (no repo)</option>

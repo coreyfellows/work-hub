@@ -47,10 +47,10 @@ export function WorkspacePage({
   const editing = useLayoutEditing();
   const tabDrag = useDragReorder(layout.tabs, layout.setTabs, 'x');
   const viewRef = useRef<HTMLDivElement>(null);
-  const panels = useSlot('workspace-panel');
+  const allPanels = useSlot('workspace-panel');
   // Right column: Details or one of the `workspace-panel` tabs (they stay mounted once opened, and the column widens
   // for them). The left column is only the sessions.
-  const [side, setSide] = useState<string>('details');
+  const [sidePick, setSide] = useState<string>('details');
   // Phones: one tab bar picks which panel fills the page (the terminal takes touch drags, so scrolling
   // past it to the side panel isn't practical). Desktop shows both columns and ignores this.
   const [mobilePane, setMobilePane] = useState<'sessions' | 'side'>('sessions');
@@ -76,6 +76,11 @@ export function WorkspacePage({
   };
 
   const ws = data?.workspaces.find((w) => w.id === id) ?? null;
+  // A panel can opt out of workspaces it doesn't apply to (Diff: no git copy).
+  const panels = allPanels.filter((p) => !ws || !p.available || p.available(ws));
+  // The picked tab, unless its panel has since opted out of this workspace (then Details).
+  const side = sidePick === 'details' || panels.some((p) => p.id === sidePick) ? sidePick : 'details';
+  const tabs = layout.tabs.filter((v) => panels.some((p) => p.id === v) || !allPanels.some((p) => p.id === v));
   const live = claude?.sessions ?? [];
   const sessions = (ws?.sessions ?? []).map((rec) => ({ rec, s: live.find((l) => l.sessionId === rec.claudeSessionId) }));
   const running = sessions.filter((x): x is { rec: (typeof x)['rec']; s: Session } => !!x.s && !FINISHED.includes(x.s.status));
@@ -256,7 +261,7 @@ export function WorkspacePage({
       {kindStates.map((k, i) => k.banner && <Fragment key={kinds[i]!.id}>{k.banner}</Fragment>)}
 
       <div className="mobile-tabs" role="tablist">
-        {(['sessions', ...layout.tabs] as string[]).map((v) => {
+        {(['sessions', ...tabs] as string[]).map((v) => {
           const on = v === 'sessions' ? mobilePane === 'sessions' : mobilePane === 'side' && side === v;
           return (
             <button
@@ -336,7 +341,7 @@ export function WorkspacePage({
           onKeyDownCapture={() => setFront('side')}
         >
           <div className="view-tabs" role="tablist">
-            {layout.tabs.map((v, i) =>
+            {tabs.map((v, i) =>
               editing ? (
                 <span
                   key={v}
@@ -349,7 +354,7 @@ export function WorkspacePage({
                       {tabLabel[v]}
                     </button>
                   </span>
-                  <MoveArrows label={tabLabel[v]!} horizontal first={i === 0} last={i === layout.tabs.length - 1} onBack={() => layout.setTabs(nudge(layout.tabs, v, -1))} onForward={() => layout.setTabs(nudge(layout.tabs, v, 1))} />
+                  <MoveArrows label={tabLabel[v]!} horizontal first={i === 0} last={i === tabs.length - 1} onBack={() => layout.setTabs(nudge(layout.tabs, v, -1))} onForward={() => layout.setTabs(nudge(layout.tabs, v, 1))} />
                 </span>
               ) : (
                 <button key={v} role="tab" aria-selected={side === v} className={side === v ? 'on' : ''} onClick={() => show(v)}>

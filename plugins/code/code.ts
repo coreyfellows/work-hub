@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import type { Workspace } from '../../plugin-api/server.ts';
+import { copyLabel, type Workspace } from '../../plugin-api/server.ts';
 import type { CodeLink } from './types.ts';
 
 export type { CodeLink } from './types.ts';
@@ -11,6 +11,12 @@ export interface CodeOptions {
   tokenFile: string;
 }
 
+/** A git copy is "repo@branch" (no branch, no "@"); any other is "folder-name detail". */
+const copyText = (t: Parameters<typeof copyLabel>[0]) => {
+  const l = copyLabel(t);
+  return !t.vcs || t.vcs === 'git' ? `${l.name}${t.branch ? l.detail : ''}` : [l.name, l.detail].filter(Boolean).join(' ');
+};
+
 /**
  * VS Code (serve-web) links for each of the workspace's worktrees. The access token stays server-side until a
  * signed-in work-hub user asks for these. No token (file missing or empty) = no links.
@@ -19,7 +25,7 @@ export async function codeLinks(ws: Pick<Workspace, 'worktrees'>, opts: CodeOpti
   const token = (await readFile(opts.tokenFile, 'utf8').catch(() => '')).trim();
   if (!token) return [];
   return ws.worktrees.map((t) => ({
-    label: `${t.repo.split('/')[1] ?? t.repo}${t.branch ? `@${t.branch}` : ''}`,
+    label: copyText(t),
     path: t.path,
     url: `${opts.url}/?tkn=${encodeURIComponent(token)}&folder=${encodeURIComponent(t.path)}`,
   }));

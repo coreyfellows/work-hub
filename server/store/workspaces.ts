@@ -7,7 +7,8 @@ export type WorkspaceStatus = 'setting-up' | 'active' | 'parked' | 'done';
 
 export interface Worktree {
   id: number;
-  repo: string;
+  vcs: string;
+  repo: string | null;
   path: string;
   branch: string | null;
   baseBranch: string | null;
@@ -54,6 +55,8 @@ export interface Workspace {
   epicTitle: string | null;
   epicCheckedAt: string | null;
   status: WorkspaceStatus;
+  /** The workspace's source control ('git', 'jj', 'folder'…); null until one is chosen. */
+  vcs: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -145,18 +148,33 @@ export function createWorkspace(input: {
   prompt?: string | null;
   status?: WorkspaceStatus;
   notes?: string | null;
+  vcs?: string | null;
 }): string {
   const id = input.id ?? uniqueId(suggestId(input));
   getDb()
-    .prepare('INSERT INTO workspaces (id, title, origin, ticket_key, prompt, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(id, input.title, input.origin, input.ticketKey ?? null, input.prompt ?? null, input.status ?? 'active', input.notes ?? null);
+    .prepare('INSERT INTO workspaces (id, title, origin, ticket_key, prompt, status, notes, vcs) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, input.title, input.origin, input.ticketKey ?? null, input.prompt ?? null, input.status ?? 'active', input.notes ?? null, input.vcs ?? null);
   logEvent(id, 'created', input.origin);
   return id;
+}
+
+/**
+ * Delete a workspace record and everything recorded under it (worktrees, sessions, links, events: the foreign keys
+ * cascade). Files on disk are not touched. For undoing a creation that failed half way, not for closing work (that's
+ * status `done`).
+ */
+export function deleteWorkspace(id: string): void {
+  getDb().prepare('DELETE FROM workspaces WHERE id = ?').run(id);
 }
 
 export function setStatus(id: string, status: WorkspaceStatus): void {
   getDb().prepare('UPDATE workspaces SET status = ? WHERE id = ?').run(status, id);
   logEvent(id, 'status', status);
+}
+
+export function setWorkspaceVcs(id: string, vcs: string | null): void {
+  getDb().prepare('UPDATE workspaces SET vcs = ? WHERE id = ?').run(vcs, id);
+  touch(id);
 }
 
 export function updateWorkspace(id: string, patch: { title?: string; notes?: string | null }): void {
@@ -166,23 +184,23 @@ export function updateWorkspace(id: string, patch: { title?: string; notes?: str
   touch(id);
 }
 
-export function addWorktree(workspaceId: string, w: { repo: string; path: string; branch?: string | null; baseBranch?: string | null }): void {
+export function addWorktree(workspaceId: string, w: { repo?: string | null; path: string; branch?: string | null; baseBranch?: string | null; vcs?: string }): void {
   getDb()
     .prepare(
-      `INSERT INTO worktrees (workspace_id, repo, path, branch, base_branch) VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(path) DO UPDATE SET workspace_id = excluded.workspace_id, repo = excluded.repo,
+      `INSERT INTO worktrees (workspace_id, repo, path, branch, base_branch, vcs) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(path) DO UPDATE SET workspace_id = excluded.workspace_id, repo = excluded.repo, vcs = excluded.vcs,
          branch = COALESCE(excluded.branch, branch), base_branch = COALESCE(excluded.base_branch, base_branch)`,
     )
-    .run(workspaceId, w.repo, w.path, w.branch ?? null, w.baseBranch ?? null);
-  logEvent(workspaceId, 'worktree', `${w.repo} ${w.branch ?? ''} ${w.path}`.trim());
+    .run(workspaceId, w.repo ?? null, w.path, w.branch ?? null, w.baseBranch ?? null, w.vcs ?? 'git');
+  logEvent(workspaceId, 'worktree', `${w.repo ?? ''} ${w.branch ?? ''} ${w.path}`.trim());
 }
 
 /** Forget a worktree (its folder was removed). */
 export function removeWorktreeRecord(workspaceId: string, path: string): void {
-  const w = getDb().prepare('SELECT repo, branch FROM worktrees WHERE workspace_id = ? AND path = ?').get(workspaceId, path) as { repo: string; branch: string | null } | undefined;
+  const w = getDb().prepare('SELECT repo, branch FROM worktrees WHERE workspace_id = ? AND path = ?').get(workspaceId, path) as { repo: string | null; branch: string | null } | undefined;
   if (!w) return;
   getDb().prepare('DELETE FROM worktrees WHERE workspace_id = ? AND path = ?').run(workspaceId, path);
-  logEvent(workspaceId, 'worktree-removed', `${w.repo} ${w.branch ?? ''} ${path}`.trim());
+  logEvent(workspaceId, 'worktree-removed', `${w.repo ?? ''} ${w.branch ?? ''} ${path}`.trim());
 }
 
 export function addSession(workspaceId: string, s: { claudeSessionId: string; role?: string; name?: string | null; cwd?: string | null }): void {
@@ -231,12 +249,14 @@ function hydrate(r: Row): Workspace {
     epicTitle: str(r.epic_title),
     epicCheckedAt: str(r.epic_checked_at),
     status: String(r.status) as WorkspaceStatus,
+    vcs: str(r.vcs),
     notes: str(r.notes),
     createdAt: String(r.created_at),
     updatedAt: String(r.updated_at),
     worktrees: (db.prepare('SELECT * FROM worktrees WHERE workspace_id = ? ORDER BY id').all(id) as Row[]).map((w) => ({
       id: Number(w.id),
-      repo: String(w.repo),
+      vcs: String(w.vcs),
+      repo: str(w.repo),
       path: String(w.path),
       branch: str(w.branch),
       baseBranch: str(w.base_branch),
@@ -271,7 +291,7 @@ export function findWorkspaceByWorktree(w: { path?: string; repo?: string; branc
   if (byPath) return String(byPath.workspace_id);
   if (w.repo && w.branch) {
     const r = db
-      .prepare('SELECT workspace_id FROM worktrees WHERE lower(repo) = lower(?) AND branch = ? ORDER BY id DESC')
+      .prepare("SELECT workspace_id FROM worktrees WHERE vcs = 'git' AND lower(repo) = lower(?) AND branch = ? ORDER BY id DESC")
       .get(w.repo, w.branch) as Row | undefined;
     if (r) return String(r.workspace_id);
   }
@@ -305,10 +325,11 @@ export function sessionOwners(): Map<string, string> {
 }
 
 /** Every recorded worktree, across workspaces. */
-export function allWorktrees(): Array<{ workspaceId: string; repo: string; path: string; branch: string | null }> {
-  return (getDb().prepare('SELECT workspace_id, repo, path, branch FROM worktrees ORDER BY id').all() as Row[]).map((r) => ({
+export function allWorktrees(): Array<{ workspaceId: string; vcs: string; repo: string | null; path: string; branch: string | null }> {
+  return (getDb().prepare('SELECT workspace_id, vcs, repo, path, branch FROM worktrees ORDER BY id').all() as Row[]).map((r) => ({
     workspaceId: String(r.workspace_id),
-    repo: String(r.repo),
+    vcs: String(r.vcs),
+    repo: str(r.repo),
     path: String(r.path),
     branch: str(r.branch),
   }));
@@ -333,4 +354,13 @@ export function findWorkspaceByLink(url: string): string | null {
     )
     .get(url) as Row | undefined;
   return r ? String(r.workspace_id) : null;
+}
+
+/** Plain folders the user trusted for `claude --bg` (a git worktree is trusted by `wh trust`; a folder has no such step). */
+export function trustFolder(path: string): void {
+  getDb().prepare('INSERT OR IGNORE INTO trusted_folders (path) VALUES (?)').run(path);
+}
+
+export function isTrustedFolder(path: string): boolean {
+  return getDb().prepare('SELECT 1 FROM trusted_folders WHERE path = ?').get(path) !== undefined;
 }

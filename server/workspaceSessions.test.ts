@@ -1,7 +1,21 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
-import { contextPrompt, workspaceRules } from './workspaceSessions.ts';
 import type { Workspace } from './store/workspaces.ts';
+
+// workspaceRules looks the workspace up, so the store gets a throwaway state dir (set before anything reads config).
+process.env.WORK_HUB_STATE_DIR = mkdtempSync(join(tmpdir(), 'wh-wss-'));
+const { contextPrompt, workspaceRules } = await import('./workspaceSessions.ts');
+const { config } = await import('./config.ts');
+const { addWorktree, createWorkspace, setWorkspaceVcs } = await import('./store/workspaces.ts');
+const { addFragment, removeFragments } = await import('./lib/prompts.ts');
+const { registerProvider, getProvider } = await import('./lib/vcs/registry.ts');
+const { gitProvider } = await import('./lib/vcs/git.ts');
+const { folderProvider } = await import('./lib/vcs/folder.ts');
+if (!getProvider('git')) registerProvider(gitProvider);
+if (!getProvider('folder')) registerProvider(folderProvider);
 
 // The workspace context a new or review session starts with (ctx.prompts.workspaceContext), byte for byte as before
 // session-tools moved out (but for the app's old name → "work-hub"); the rules part is whatever workspaceRules says (it names this checkout's `wh`).
@@ -54,4 +68,78 @@ ${rules(ws.id)}
 Your task:
 
 T`);
+});
+
+// Today's rules, copied as they read before source-control providers: a git-only (or empty) workspace gets exactly these.
+const WH = config.whCommand;
+const gitRules = (id: string) => [
+  "work-hub owns the sessions for this workspace. If part of the work needs its own session (e.g. a separate PR), you may start one: create the worktree (`git worktree add`), record it with `wh worktree add`, and run plain `claude --bg --name \"<name>\" --model <model> \"<self-contained prompt>\"` from inside it; work-hub adds it to this workspace by itself.",
+  `Record what you create with \`${WH}\`: \`worktree add ${id} --path <path> --base <base>\`, \`link add ${id} --url <url>\` (every PR you open), \`note ${id} "<plan>"\`.`,
+];
+
+test('workspaceRules: a git-only, an empty and an unknown workspace read exactly as before', () => {
+  const git = createWorkspace({ title: 'G', origin: 'prompt' });
+  addWorktree(git, { repo: 'org/repo', path: '/w/repo/G', branch: 'f-g', vcs: 'git' });
+  assert.deepEqual(workspaceRules(git), gitRules(git));
+  const empty = createWorkspace({ title: 'E', origin: 'prompt' });
+  assert.deepEqual(workspaceRules(empty), gitRules(empty));
+  assert.deepEqual(workspaceRules('ws'), gitRules('ws'));
+});
+
+test('workspaceRules: a folder copy (or a folder choice) appends the folder provider\'s instructions', () => {
+  const opts = (id: string) => ({ workspaceId: id, ticketKey: null, whCommand: WH, worktreesDir: config.paths.worktrees });
+  const mixed = createWorkspace({ title: 'M', origin: 'prompt' });
+  addWorktree(mixed, { repo: 'org/repo', path: '/w/repo/M', branch: 'f-m', vcs: 'git' });
+  addWorktree(mixed, { path: '/p/notes', vcs: 'folder' });
+  assert.deepEqual(workspaceRules(mixed), [...gitRules(mixed), ...folderProvider.agentInstructions(opts(mixed))]);
+  const chosen = createWorkspace({ title: 'C', origin: 'prompt' });
+  setWorkspaceVcs(chosen, 'folder');
+  assert.deepEqual(workspaceRules(chosen).at(-1), folderProvider.agentInstructions(opts(chosen)).at(-1));
+  // A kind with no provider in force (its plugin is off) adds nothing.
+  const gone = createWorkspace({ title: 'X', origin: 'prompt' });
+  addWorktree(gone, { path: '/p/jj', branch: 'feat', vcs: 'nope' });
+  assert.deepEqual(workspaceRules(gone), gitRules(gone));
+});
+
+test('workspace-rules and session-context fragments get the workspace\'s kinds', async () => {
+  const seen: Array<{ kind: string; kinds: unknown }> = [];
+  addFragment('workspace-rules', (c) => (seen.push({ kind: 'rules', kinds: c.kinds }), null), 'kinds-test');
+  addFragment('session-context', (c) => (seen.push({ kind: 'context', kinds: c.kinds }), null), 'kinds-test');
+  try {
+    const id = createWorkspace({ title: 'K', origin: 'prompt' });
+    setWorkspaceVcs(id, 'jj');
+    addWorktree(id, { path: '/p/a', vcs: 'folder' });
+    addWorktree(id, { repo: 'o/r', path: '/w/r/K', branch: 'b', vcs: 'git' });
+    addWorktree(id, { path: '/p/b', vcs: 'folder' });
+    workspaceRules(id);
+    assert.deepEqual(seen.pop(), { kind: 'rules', kinds: ['jj', 'folder', 'git'] });
+    workspaceRules('no-such-workspace');
+    assert.deepEqual(seen.pop(), { kind: 'rules', kinds: ['git'] });
+    const ws = { id: 'k', title: 'K', status: 'active', vcs: null, ticketKey: null, epicKey: null, epicTitle: null, prompt: null, notes: null, worktrees: [{ id: 1, vcs: 'folder', path: '/p', repo: null, branch: null, baseBranch: null }], links: [], sessions: [] } as unknown as Workspace;
+    seen.length = 0;
+    await contextPrompt(ws, 'T');
+    assert.deepEqual(seen, [{ kind: 'context', kinds: ['folder'] }, { kind: 'rules', kinds: ['folder'] }]);
+  } finally {
+    removeFragments('kinds-test');
+  }
+});
+
+test('the workspace context prompt lists a folder as (folder), another kind by its line, git as before', async () => {
+  const ws = {
+    id: 'mix', title: 'Mix', status: 'active', vcs: null, ticketKey: null, epicKey: null, epicTitle: null, prompt: null, notes: null,
+    worktrees: [
+      { id: 1, vcs: 'git', path: '/w/repo/X', repo: 'org/repo', branch: 'f-x', baseBranch: 'main' },
+      { id: 2, vcs: 'folder', path: '/p', repo: null, branch: null, baseBranch: null },
+      { id: 3, vcs: 'jj', path: '/j', repo: null, branch: 'feat', baseBranch: 'trunk' },
+      { id: 4, vcs: 'hg', path: '/h', repo: 'org/h', branch: null, baseBranch: null },
+    ],
+    links: [], sessions: [],
+  } as unknown as Workspace;
+  const out = await contextPrompt(ws, 'T');
+  assert.ok(out.includes(`- Worktrees:
+  - /w/repo/X (org/repo @f-x → main)
+  - /p (folder)
+  - /j (jj @feat → trunk)
+  - /h (hg org/h @?)
+`), out);
 });

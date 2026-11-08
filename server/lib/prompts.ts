@@ -8,6 +8,11 @@ export type PromptFragmentKind = 'workspace-rules' | 'explorer' | 'session-conte
 /** What the prompt is being written for; fields depend on the kind (e.g. `workspaceId` for workspace rules). */
 export interface PromptContext {
   workspaceId?: string;
+  /**
+   * `workspace-rules` and `session-context`: the source-control kinds in the workspace (its chosen vcs, then its working
+   * copies', deduped); `['git']` when it has neither.
+   */
+  kinds?: string[];
   [key: string]: unknown;
 }
 

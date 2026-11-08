@@ -3,15 +3,17 @@
  * (group `folders`, stored in `app_settings`; the env vars WORK_HUB_REPOS_DIR / TW_WORKTREES_ROOT still win) and are read
  * on every use through `config.paths`, so a change applies without a restart. A first-run page asks for them once.
  */
+import { realpathSync } from 'node:fs';
 import { mkdir, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { isAbsolute, resolve } from 'node:path';
+import { isAbsolute, resolve, sep } from 'node:path';
 import type { SettingDef } from '../../plugin-api/manifest.ts';
 import type { SettingGroup } from '../settings.ts';
 
 export const FOLDERS_GROUP = 'folders';
 export const REPOS_KEY = `${FOLDERS_GROUP}.reposDir`;
 export const WORKTREES_KEY = `${FOLDERS_GROUP}.worktreesDir`;
+export const PLAIN_KEY = `${FOLDERS_GROUP}.plainDir`;
 /** Set (to true) once the first-run page has been answered, so it never shows again. */
 export const CLEANUP_KEY = `${FOLDERS_GROUP}.cleanupOnClose`;
 export const SETUP_DONE_KEY = 'setup.folders';
@@ -35,6 +37,15 @@ export function folderDefs(home: string = homedir()): SettingDef[] {
       default: `${home}/worktrees`,
       placeholder: '~/worktrees',
       env: 'TW_WORKTREES_ROOT',
+    },
+    {
+      key: 'plainDir',
+      label: 'Plain workspaces folder',
+      description: 'Where workspaces without source control are created, as <folder>/<name>. Sessions may be started and trusted inside it without a confirmation; any other plain folder asks first.',
+      type: 'string',
+      default: `${home}/workspaces`,
+      placeholder: '~/workspaces',
+      env: 'WORK_HUB_PLAIN_DIR',
     },
     {
       key: 'cleanupOnClose',
@@ -72,6 +83,30 @@ export function folderError(raw: unknown, home?: string): string | null {
   if (!isAbsolute(p)) return `${raw}: use an absolute path (or start with ~/)`;
   if (resolve(p) === '/') return 'the filesystem root is not a valid folder';
   if (p.includes('\0')) return 'invalid path';
+  return null;
+}
+
+const SYSTEM_FOLDERS = ['/System', '/usr', '/bin', '/sbin', '/etc', '/Library', '/Applications', '/private', '/var', '/opt'];
+
+/**
+ * Why `raw` can't be trusted for `claude --bg` as a plain folder, or null. Beyond `folderError`: never the home folder
+ * itself or one of its ancestors, nor a system folder or anything under one. Pass a resolved (real) path when you have it.
+ */
+export function folderTrustError(raw: unknown, home: string = homedir()): string | null {
+  const bad = folderError(raw, home);
+  if (bad) return bad;
+  const p = resolve(expandFolder(raw as string, home));
+  const h = resolve(home);
+  let realHome = h;
+  try {
+    realHome = realpathSync(h);
+  } catch {
+    // home doesn't resolve: compare with the path as given
+  }
+  for (const hh of new Set([h, realHome])) {
+    if (p === hh || hh.startsWith(p === '/' ? p : p + sep)) return 'the home folder itself (or a folder containing it) cannot be trusted: pick a folder inside it';
+  }
+  if (SYSTEM_FOLDERS.some((s) => p === s || p.startsWith(`${s}/`))) return `${p} is a system folder`;
   return null;
 }
 

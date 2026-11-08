@@ -6,8 +6,9 @@ import { createNodeWebSocket } from '@hono/node-ws';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { acceptedAuthorities, config, isAcceptedOrigin, publicOrigin, repoRoot, setFolderResolver } from './config.ts';
-import { expandFolder, foldersGroup, REPOS_KEY, WORKTREES_KEY } from './lib/folders.ts';
+import { acceptedAuthorities, config, isAcceptedOrigin, publicOrigin, repoRoot, setFolderResolver, setVcsDefaultResolver } from './config.ts';
+import { expandFolder, foldersGroup, PLAIN_KEY, REPOS_KEY, WORKTREES_KEY } from './lib/folders.ts';
+import { VCS_DEFAULT_KEY, vcsGroup } from './lib/vcs/default.ts';
 import { pendingOffers, registerSetupRoutes } from './setupRoute.ts';
 import { readPluginsConfig, writePluginsConfig } from './plugins/config.ts';
 import { cleanupAfterClose, registerWorktreeRoutes } from './worktreeRoutes.ts';
@@ -40,12 +41,16 @@ import { loadPlugins, runStartHooks } from './plugins/loader.ts';
 import { CORE_ROUTES } from './coreRoutes.ts';
 import { registerPluginsConfigRoutes } from './plugins/configRoute.ts';
 import { registerSettingsRoutes } from './settingsRoute.ts';
+import { registerTrustedFolderRoutes } from './trustedFoldersRoute.ts';
 import { registerApplyRoutes } from './applyRoute.ts';
 import { registerSettingsGroup, resolveFull } from './settings.ts';
 import { askClaudeJson } from './lib/headless.ts';
 import { readJson } from './lib/http.ts';
 import { pluginId, pluginInstalled } from './lib/claudePlugins.ts';
 import * as gitLib from './lib/git.ts';
+import { listProviders, registerProvider } from './lib/vcs/registry.ts';
+import { gitProvider } from './lib/vcs/git.ts';
+import { folderProvider } from './lib/vcs/folder.ts';
 import * as workspacesStore from './store/workspaces.ts';
 import { getDb } from './store/db.ts';
 import { boundWorktrees } from './store/sessionWorktrees.ts';
@@ -102,6 +107,7 @@ installGuard(app, {
 // middleware, here ahead of every route, covers these and whatever plugins add (`ctx.revalidate`).
 addRevalidate([
   '/api/layout',
+  '/api/vcs',
   '/api/sessions/:id/file-edits',
   '/api/sessions/:id/tasks',
 ]);
@@ -110,9 +116,19 @@ installRevalidate(app);
 // Settings → Folders: the repos and worktrees folders (env, else Settings, else ~/repos and ~/worktrees), read on every use.
 registerSettingsGroup(foldersGroup());
 setFolderResolver((which) => {
-  const v = resolveFull(which === 'repos' ? REPOS_KEY : WORKTREES_KEY)?.value;
+  const v = resolveFull(which === 'repos' ? REPOS_KEY : which === 'plain' ? PLAIN_KEY : WORKTREES_KEY)?.value;
   return typeof v === 'string' && v.trim() ? expandFolder(v) : undefined;
 });
+// Settings → Source control: the default provider ('detect' unless chosen).
+registerSettingsGroup(vcsGroup());
+setVcsDefaultResolver(() => {
+  const v = resolveFull(VCS_DEFAULT_KEY)?.value;
+  return typeof v === 'string' && v ? v : undefined;
+});
+
+// The core's source-control providers, before plugins add theirs (`ctx.vcs.register`).
+registerProvider(gitProvider, 'core');
+registerProvider(folderProvider, 'core');
 
 // --- Plugins -----------------------------------------------------------------------------
 // After the guard (so plugin routes sit behind it) and before the core routes and the /api/* 404. Plugins add their
@@ -161,6 +177,9 @@ const plugins = await loadPlugins(app, {
     },
     get worktreesDir() {
       return config.paths.worktrees;
+    },
+    get plainDir() {
+      return config.paths.plain;
     },
     ticketWorkflowScripts: config.paths.ticketWorkflowScripts,
     whBin: config.whBin,
@@ -221,6 +240,13 @@ registerSetupRoutes(app, {
 // The workspace panel's tab and section order, shared by every workspace and device (store/uiLayout.ts).
 app.get('/api/layout', (c) => c.json(getLayout()));
 app.post('/api/layout', async (c) => c.json(setLayout(await c.req.json().catch(() => null))));
+
+// Confirm a plain folder outside the plain root for `claude --bg` (the UI asks first; `trustWorktree` then accepts it).
+registerTrustedFolderRoutes(app);
+// New workspace's Source control choice: the registered providers and Settings' default ('detect' unless chosen).
+app.get('/api/vcs', (c) =>
+  c.json({ providers: listProviders().map((p) => ({ id: p.id, title: p.title, experimental: !!p.experimental })), default: config.vcsDefault }),
+);
 
 // --- Sources ---------------------------------------------------------------------------
 app.get('/api/state', (c) => c.json(registry.all()));

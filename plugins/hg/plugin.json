@@ -1,0 +1,8 @@
+{
+  "id": "hg",
+  "apiVersion": 1,
+  "title": "Mercurial (hg) — experimental",
+  "description": "Mercurial shares as a workspace's working copies (create, line, dirty check, remove). Experimental: tested only against a fake hg",
+  "defaultEnabled": false,
+  "server": "server.ts"
+}

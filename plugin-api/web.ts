@@ -36,6 +36,8 @@ import type * as router from '../web/src/router.tsx';
 import type * as components from '../web/src/components/kit.ts';
 
 export { API_VERSION } from './manifest.ts';
+/** How a working copy reads in lists and pickers (git: repo and @branch; other copies: folder name and vcs). */
+export { copyLabel, copyLabelText, type CopyLike } from './copyLabel.ts';
 /** The models a session can be started on, strongest first (`SessionModel` is one of them). */
 export { SESSION_MODELS, type SessionModel } from './models.ts';
 export * from '../web/src/components/kit.ts';
@@ -277,6 +279,8 @@ export interface WorkspacePanelItem extends SlotBase {
   component: ComponentType<WorkspacePanelProps>;
   /** Wide tools (Note, Code) slide over the terminal column at laptop widths. */
   wide?: boolean;
+  /** Hides the tab for workspaces where it doesn't apply (default: always shown). */
+  available?(workspace: Workspace): boolean;
 }
 
 /**

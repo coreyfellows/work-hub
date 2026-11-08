@@ -11,7 +11,7 @@ import { config } from '../config.ts';
 
 export const DB_PATH = config.dbFile;
 
-const MIGRATIONS: string[] = [
+export const MIGRATIONS: string[] = [
   `
   CREATE TABLE workspaces (
     id          TEXT PRIMARY KEY,              -- slug, e.g. "tkt-14393" or "work-hub"
@@ -177,6 +177,28 @@ const MIGRATIONS: string[] = [
     session_id TEXT PRIMARY KEY,
     name       TEXT NOT NULL
   );`,
+  // 17: worktrees gain `vcs` (existing rows are git) and `repo` becomes nullable (a plain folder has no owner/name).
+  // A rebuild, since SQLite can't drop NOT NULL in place; nothing references worktrees by foreign key.
+  `CREATE TABLE worktrees_new (
+    id            INTEGER PRIMARY KEY,
+    workspace_id  TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    repo          TEXT,                        -- owner/name; null when the folder has no remote identity
+    path          TEXT NOT NULL UNIQUE,
+    branch        TEXT,
+    base_branch   TEXT,
+    created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    vcs           TEXT NOT NULL DEFAULT 'git'
+  );
+  INSERT INTO worktrees_new (id, workspace_id, repo, path, branch, base_branch, created_at)
+    SELECT id, workspace_id, repo, path, branch, base_branch, created_at FROM worktrees;
+  DROP TABLE worktrees;
+  ALTER TABLE worktrees_new RENAME TO worktrees;`,
+  // 18: a workspace's own source control (null = not chosen yet) and the plain folders the user trusted for `claude --bg`.
+  `ALTER TABLE workspaces ADD COLUMN vcs TEXT;
+  CREATE TABLE trusted_folders (
+    path        TEXT PRIMARY KEY,
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  );`,
 ];
 
 let db: DatabaseSync | null = null;
@@ -190,12 +212,22 @@ export function getDb(): DatabaseSync {
   return db;
 }
 
-/** Apply any migrations the database hasn't seen (exported so tests can build an in-memory one). */
-export function migrate(d: DatabaseSync): void {
-  const { user_version: version } = d.prepare('PRAGMA user_version').get() as { user_version: number };
-  for (let v = version; v < MIGRATIONS.length; v++) {
-    d.exec('BEGIN');
+/**
+ * Apply any migrations the database hasn't seen (exported so tests can build an in-memory one). Several processes open
+ * the same file (the server, `wh`), so each step takes the write lock first (`BEGIN IMMEDIATE`) and re-reads the
+ * version inside it: a process that read an older version before another one migrated never runs a step twice.
+ */
+export function migrate(d: DatabaseSync, upTo: number = MIGRATIONS.length): void {
+  const version = () => (d.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
+  if (version() >= upTo) return; // up to date: no write lock
+  for (;;) {
+    d.exec('BEGIN IMMEDIATE');
     try {
+      const v = version();
+      if (v >= upTo) {
+        d.exec('COMMIT');
+        return;
+      }
       d.exec(MIGRATIONS[v]);
       d.exec(`PRAGMA user_version = ${v + 1}`);
       d.exec('COMMIT');

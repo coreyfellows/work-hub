@@ -29,6 +29,8 @@ import type { Source, SourceState } from '../registry.ts';
 import type { ClaudeData } from '../sources/claude.ts';
 import { hubEvents } from '../lib/events.ts';
 import { fragments } from '../lib/prompts.ts';
+import { detectProvider, getProvider, listProviders, registerProvider, removeProviders } from '../lib/vcs/registry.ts';
+import { effectiveVcsDefault } from '../lib/vcs/default.ts';
 import { migratePlugin } from '../store/pluginMigrations.ts';
 import { routeConflicts } from '../coreRoutes.ts';
 import { shellWord } from '../lib/shellWord.ts';
@@ -58,7 +60,7 @@ export interface ContextDeps {
   git: ServerPluginContext['git'];
   /** `claudePlugins.ts` `pluginInstalled` in the real server; without it, every plugin counts as not installed. */
   claude?: ServerPluginContext['claude'];
-  paths: { stateDir: string; configDir: string; cacheDir: string; repoRoot: string; reposDir?: string; worktreesDir?: string; ticketWorkflowScripts?: string; whBin?: string; whCommand?: string };
+  paths: { stateDir: string; configDir: string; cacheDir: string; repoRoot: string; reposDir?: string; worktreesDir?: string; plainDir?: string; ticketWorkflowScripts?: string; whBin?: string; whCommand?: string };
   /** The core's workspace-session rules (`workspaceRules` in workspaceSessions.ts); without it, only the fragments. */
   workspaceRules?(workspaceId: string): string[];
   /** The core's workspace context prefix for a session's task (`contextPrompt` in workspaceSessions.ts); without it, `ctx.prompts.workspaceContext` rejects. */
@@ -98,13 +100,14 @@ export const pluginRegistries = {
 const services = new Map<string, { plugin: string; api: unknown }>();
 
 /**
- * Undo a plugin's registrations (its `register()` threw): its services, everything in the core registries, its public
- * paths and auth provider. Routes and middleware it already put on the app stay (Hono can't remove them), as do
+ * Undo a plugin's registrations (its `register()` threw): its services, everything in the core registries, its
+ * source-control providers, its public paths and auth provider. Routes and middleware it already put on the app stay (Hono can't remove them), as do
  * sources it added to the registry and events it subscribed to.
  */
 export function removePluginRegistrations(id: string, hooks: CoreHooks): void {
   for (const [name, s] of services) if (s.plugin === id) services.delete(name);
   hooks.removeByPlugin(id);
+  removeProviders(id);
   pluginRegistries.publicPaths = pluginRegistries.publicPaths.filter((p) => p.plugin !== id);
   if (pluginRegistries.authProvider?.plugin === id) pluginRegistries.authProvider = null;
 }
@@ -252,6 +255,13 @@ export function createServerContext(id: string, manifest: PluginManifest, dir: s
     files: { addRoot: (dir) => deps.hooks.addFileRoot(dir, id), roots: () => deps.hooks.fileRoots() },
     jobs: deps.jobs,
     events: hubEvents,
+    vcs: {
+      register: (p) => registerProvider(p, id),
+      get: (pid) => getProvider(pid),
+      list: () => listProviders(),
+      detect: (path, opts) => detectProvider(path, opts),
+      effectiveDefault: () => effectiveVcsDefault(),
+    },
     reconcile: { addPass: (fn) => deps.hooks.addReconcilePass(fn, id), run: () => deps.runReconcile?.() },
     auth: {
       setProvider: (provider) => {
@@ -273,6 +283,9 @@ export function createServerContext(id: string, manifest: PluginManifest, dir: s
       },
       get worktreesDir() {
         return deps.paths.worktreesDir ?? join(homedir(), 'worktrees');
+      },
+      get plainDir() {
+        return deps.paths.plainDir ?? join(homedir(), 'workspaces');
       },
       // Read when used: the ticket-workflow plugin's bundled scripts while it's loaded, else the core's setting.
       get ticketWorkflowScripts() {

@@ -1,0 +1,8 @@
+{
+  "id": "p4",
+  "apiVersion": 1,
+  "title": "Perforce (p4) — experimental",
+  "description": "Perforce client workspaces, copied from template clients, as a workspace's working copies (create, line, opened/shelved check, remove). Experimental: tested only against a fake p4",
+  "defaultEnabled": false,
+  "server": "server.ts"
+}

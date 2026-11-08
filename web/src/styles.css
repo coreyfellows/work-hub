@@ -782,6 +782,7 @@ dialog.modal.modal-form { width: min(640px, 96vw); }
 /* Worktrees grouped by session; the orphaned group carries the cleanup button */
 .wt-group { margin-top: 8px; }
 .wt-group-head { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 2px; min-width: 0; flex-wrap: wrap; }
+.wt-group li { min-width: 0; overflow-wrap: anywhere; } /* a long folder path wraps inside its row */
 .wt-group.orphaned .wt-group-head { color: var(--warn); }
 .wt-remove { margin-left: 8px; }
 .wt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }

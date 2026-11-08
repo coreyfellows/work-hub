@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import { get, post, type Workspace } from '../api.ts';
-import type { Sources, Worktree } from '../../../plugin-api/web.ts';
+import { copyLabel, type Sources, type Worktree } from '../../../plugin-api/web.ts';
 import type { RemoveResult, WorktreeInfo } from '../../../server/worktreeRoutes.ts';
 import { AsOf } from '../components/AsOf.tsx';
 import { ConfirmPopover } from '../components/ConfirmPopover.tsx';
@@ -12,6 +12,17 @@ import type { ClaudeData } from '../api.ts';
 type Action = { id: string; component: ComponentType<{ workspace: Workspace; worktree: Worktree; sources: Sources; data: unknown }> };
 
 const short = (p: string) => p.replace(/^\/Users\/[^/]+/, '~');
+
+/** A copy's name and detail (git: repo and @branch; a folder: its folder name; others: folder name and vcs). */
+function CopyName({ t }: { t: { vcs: string; repo: string | null; path: string; branch: string | null } }) {
+  const l = copyLabel(t);
+  return (
+    <>
+      <b>{l.name}</b>
+      {l.detail && <> <span className="muted">{l.detail}</span></>}
+    </>
+  );
+}
 
 /**
  * A workspace's worktrees, grouped by the open session working in each; the ones with no open session are "Orphaned",
@@ -60,7 +71,7 @@ export function WorktreeList({ ws, sources, actions, data }: { ws: Workspace; so
     const w = ws.worktrees.find((x) => x.path === t.path);
     return (
       <li key={t.path}>
-        <b>{t.repo.split('/')[1]}</b> <span className="muted">@{t.branch ?? '?'}</span>
+        <CopyName t={t} />
         {t.baseBranch && <span className="muted"> → {t.baseBranch}</span>}
         {w &&
           actions.map((a, i) => {
@@ -94,7 +105,7 @@ export function WorktreeList({ ws, sources, actions, data }: { ws: Workspace; so
         <ul className="plain">
           {ws.worktrees.map((t) => (
             <li key={t.id}>
-              <b>{t.repo.split('/')[1]}</b> <span className="muted">@{t.branch ?? '?'}</span>
+              <CopyName t={t} />
               <div className="muted small-text">{short(t.path)}</div>
             </li>
           ))}
@@ -117,7 +128,9 @@ export function WorktreeList({ ws, sources, actions, data }: { ws: Workspace; so
     g.items.push(t);
     bySession.set(first.sessionId, g);
   }
-  const safe = orphaned.filter((t) => !t.block);
+  // The bulk button never touches plain folders: those are forgotten one at a time.
+  const bulk = orphaned.filter((t) => t.vcs !== 'folder');
+  const safe = bulk.filter((t) => !t.block);
   const canRemove = ws.status !== 'setting-up';
 
   return (
@@ -142,7 +155,7 @@ export function WorktreeList({ ws, sources, actions, data }: { ws: Workspace; so
                 message={
                   <>
                     Delete {safe.length} worktree folder{safe.length === 1 ? '' : 's'}? Nothing in {safe.length === 1 ? 'it' : 'them'} is lost (no uncommitted changes, every commit is on another branch or remote), and the branches stay.
-                    {orphaned.length > safe.length && ` ${orphaned.length - safe.length} with unsaved work stay.`}
+                    {bulk.length > safe.length && ` ${bulk.length - safe.length} with unsaved work stay.`}
                   </>
                 }
                 onConfirm={() => remove({ orphaned: true })}
@@ -158,9 +171,11 @@ export function WorktreeList({ ws, sources, actions, data }: { ws: Workspace; so
                 canRemove && (
                   <ConfirmPopover
                     className="ghost small wt-remove"
-                    confirmLabel={t.block ? 'Discard and remove' : 'Remove'}
+                    confirmLabel={t.vcs === 'folder' ? 'Forget folder' : t.block ? 'Discard and remove' : 'Remove'}
                     message={
-                      t.block ? (
+                      t.vcs === 'folder' ? (
+                        <>Forget {copyLabel(t).name}? Its files stay on disk.</>
+                      ) : t.block ? (
                         <>
                           Delete {short(t.path)} <b>including its {t.block}</b>? This can't be undone. The branch stays.
                         </>
@@ -170,7 +185,7 @@ export function WorktreeList({ ws, sources, actions, data }: { ws: Workspace; so
                     }
                     onConfirm={() => remove({ paths: [t.path], force: !!t.block })}
                   >
-                    Remove…
+                    {t.vcs === 'folder' ? 'Forget folder…' : 'Remove…'}
                   </ConfirmPopover>
                 ),
               ),

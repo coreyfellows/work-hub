@@ -1,0 +1,68 @@
+{
+  "id": "claude-monitor",
+  "apiVersion": 1,
+  "title": "Claude Code updates",
+  "description": "Says when a newer Claude Code is out and updates it on request, shows what's new, and suggests which plugins could use the new features (then starts a session per plugin you pick)",
+  "defaultEnabled": true,
+  "server": "server.ts",
+  "web": "web.tsx",
+  "settings": [
+    {
+      "key": "channel",
+      "label": "Release channel",
+      "type": "select",
+      "description": "Which npm release to compare against. Auto follows Claude Code's own autoUpdatesChannel setting (latest unless set to stable).",
+      "options": [
+        { "value": "auto", "label": "Auto (Claude Code's setting)" },
+        { "value": "latest", "label": "latest" },
+        { "value": "stable", "label": "stable" }
+      ],
+      "default": "auto"
+    },
+    {
+      "key": "checkHours",
+      "label": "Check npm for a new version every (hours)",
+      "description": "Only while the app is open in a browser and you're at the machine; ↻ checks at once.",
+      "type": "number",
+      "default": 6,
+      "min": 1,
+      "max": 168
+    },
+    {
+      "key": "analysisModel",
+      "label": "Model that suggests plugin updates",
+      "description": "The headless claude -p run behind \"Suggest plugin updates\" (it costs tokens; only runs when you ask).",
+      "type": "select",
+      "options": [
+        { "value": "opus", "label": "opus" },
+        { "value": "sonnet", "label": "sonnet" },
+        { "value": "haiku", "label": "haiku" }
+      ],
+      "default": "sonnet"
+    },
+    {
+      "key": "updateModel",
+      "label": "Model of the plugin update sessions",
+      "type": "select",
+      "options": [
+        { "value": "fable", "label": "fable" },
+        { "value": "opus", "label": "opus" },
+        { "value": "sonnet", "label": "sonnet" },
+        { "value": "haiku", "label": "haiku" }
+      ],
+      "default": "opus"
+    },
+    {
+      "key": "changelogUrl",
+      "label": "Changelog URL",
+      "type": "string",
+      "default": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md"
+    },
+    {
+      "key": "registryUrl",
+      "label": "npm dist-tags URL",
+      "type": "string",
+      "default": "https://registry.npmjs.org/-/package/@anthropic-ai/claude-code/dist-tags"
+    }
+  ]
+}

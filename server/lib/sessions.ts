@@ -3,6 +3,8 @@ import { homedir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
 import { config } from '../config.ts';
 import type { Session } from '../sources/claude.ts';
+import { isTrustedFolder } from '../store/workspaces.ts';
+import { folderTrustError } from './folders.ts';
 import { hubEvents } from './events.ts';
 import { run } from './exec.ts';
 import { fragments } from './prompts.ts';
@@ -164,20 +166,30 @@ export function claudeConfigFile(): string {
  * Trust a worktree for Claude Code, so `claude --bg` starts there instead of refusing ("Workspace not trusted"). Same
  * effect as the ticket-workflow plugin's `trust-worktree.sh`: `projects[<real path>].hasTrustDialogAccepted = true` in
  * the config file, creating the entry and keeping everything else. Trust is per path (a trusted parent doesn't cover
- * subfolders). Only a directory under the worktrees root is accepted (after resolving symlinks). The file is backed up
+ * subfolders). Only a directory under the worktrees root or the plain-workspaces root (while that root itself passes
+ * `folderTrustError`), or a folder the user confirmed (`trusted_folders`: the New workspace form's confirmation or
+ * `POST /api/trusted-folders`), is accepted (after resolving symlinks). The file is backed up
  * (`.bak-trust-worktree`) and rewritten atomically (temp file + rename, same mode); nothing is written when the path is
- * already trusted. `configFile` and `worktreesRoot` are for tests: never point a test at the real config.
+ * already trusted. `configFile`, `worktreesRoot`, `plainRoot` and `isTrusted` are for tests: never point a test at the real config.
  */
 export async function trustWorktree(
   path: string,
-  opts: { configFile?: string; worktreesRoot?: string } = {},
+  opts: { configFile?: string; worktreesRoot?: string; plainRoot?: string; isTrusted?: (realPath: string) => boolean } = {},
 ): Promise<{ path: string; changed: boolean }> {
   const file = opts.configFile ?? claudeConfigFile();
   const dir = await realpath(path).catch(() => null);
   if (!dir || !(await stat(dir)).isDirectory()) throw new Error(`trust: not a directory: ${path}`);
   const rootIn = opts.worktreesRoot ?? config.paths.worktrees;
   const root = await realpath(rootIn).catch(() => null);
-  if (!root || !dir.startsWith(root + sep)) throw new Error(`trust: refusing a path outside the worktrees root (${rootIn}): ${dir}`);
+  const plainReal = await realpath(opts.plainRoot ?? config.paths.plain).catch(() => null);
+  // The worktrees root is trusted as is; the plain root must itself pass `folderTrustError` (a plain root set to $HOME
+  // must not make all of home trustable), and so must what is trusted under it or confirmed (a plain root set to /usr
+  // must not make /usr/local trustable).
+  const plain = plainReal !== null && folderTrustError(plainReal) === null ? plainReal : null;
+  const allowed =
+    (root !== null && dir.startsWith(root + sep)) ||
+    (folderTrustError(dir) === null && ((plain !== null && dir.startsWith(plain + sep)) || (opts.isTrusted ?? isTrustedFolder)(dir)));
+  if (!allowed) throw new Error(`trust: refusing a path outside the worktrees root (${rootIn}), the plain workspaces root, or a confirmed folder: ${dir}`);
   const text = await readFile(file, 'utf8').catch(() => null);
   if (text === null) throw new Error(`trust: ${file} not found (has Claude Code run on this machine?)`);
   const data = JSON.parse(text) as { projects?: Record<string, Record<string, unknown>> };

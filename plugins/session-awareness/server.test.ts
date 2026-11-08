@@ -30,6 +30,7 @@ const workspace = (id: string, sessionIds: string[], status = 'active'): Workspa
     epicKey: null,
     epicTitle: null,
     epicCheckedAt: null,
+    vcs: null,
     status,
     notes: null,
     createdAt: '',

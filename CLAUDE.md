@@ -163,10 +163,22 @@ WAL; core schema changes are new entries in the core MIGRATIONS, plugin ones go 
 (session status, PR checks) is overlaid in the UI by matching session ids and branches.
 
 - `bin/wh` is the CLI over the same DB; agents use it to record worktrees, links, notes, title and status, and to trust a
-  new worktree for `claude --bg` (`wh trust <path>`, the same `trustWorktree` as `ctx.sessions.trustWorktree`). Events it
+  new worktree for `claude --bg` (`wh trust <path>`, the same `trustWorktree` as `ctx.sessions.trustWorktree`), and to record a non-git copy
+  (`wh worktree add --vcs <id> [--branch <b>]`; an existing plain directory falls back to `folder`, never the worktrees,
+  repos or plain root or a folder containing one; re-recording a provider's copy without `--vcs` keeps its vcs and repo). Events it
   logs (`wh claim <ws> <text>`, `wh done <ws> <text>`, `wh log`, `wh link add`) carry the calling session's id
   (`events.session_id`, from `CLAUDE_CODE_SESSION_ID`, a subagent's job dir, or `--session`); `store.listEvents` filters
   by type and session.
+- Source control: a workspace and each of its worktrees carry a `vcs` provider id (`workspaces.vcs`, `worktrees.vcs`;
+  `repo` is nullable for copies with no repo). Providers (`server/lib/vcs/`, `ctx.vcs`: `register`, `get`, `list`,
+  `detect`) are `git` and `folder` in core; jj, hg and p4 are experimental plugins (off by default). Non-git copies go
+  through their provider; git paths are unchanged. A non-git copy matches sessions by path only (no repo + branch match). Removal:
+  core refuses a non-git removal outside the worktrees folder; a plain folder is only forgotten, never deleted, and the
+  bulk orphaned removal skips them. Trust (`ctx.sessions.trustWorktree`) for a folder outside the worktrees and plain
+  roots needs a confirmation (the New workspace form's `POST /api/workspaces { confirmFolder: true }`, which calls
+  `store.trustFolder`; `POST /api/trusted-folders { path }` does the same for plugins and scripts); `/`, home and its ancestors and system folders are
+  always refused. A plain folder recorded high in the tree (e.g. `~/repos`) claims every unrecorded session started
+  beneath it, since session matching is by deepest recorded path. The Diff tab and PR features are git-only.
 - Renaming: a workspace's title (`POST /api/workspaces/:id/title`) and a session's name (`POST /api/sessions/:id/name`, kept in
   `session_names` and overlaid on what `claude agents` reports; an empty name resets it) are edited in place with
   `EditableTitle` in the workspace header and the session header (shown in the embedded view too).
@@ -362,6 +374,10 @@ Each lives in `plugins/<id>/` with its own README (what it does, routes, slots, 
 | session-awareness | sibling sessions share a derived per-workspace digest (claims, PRs, commits, edited files): in start prompts, a change-only hook, `wh claim`/`wh done`, Details → Sessions at a glance | plugins/session-awareness/README.md |
 | auth | LAN access: token sign-in, device pairing, passkeys (off by default) | plugins/auth/README.md |
 | scrutinize-pr | the PR page's Summary tab: a narrative guide to the PR written on demand and saved locally, how much changed since and an Update that folds in only the new commits, questions on any passage answered inline or folded into the guide; `/work-hub:scrutinize-pr [PR]` starts one from a session | plugins/scrutinize-pr/README.md |
+| claude-monitor | a banner when a newer Claude Code is out (Update runs `claude update` as a job), a What's new modal of the release notes, and on demand plugin suggestions from them: tick plugins to update (a workspace and session each) or skip; baselines from manifest `claudeVersion` and local records | plugins/claude-monitor/README.md |
+| jj | experimental (off by default, fake-CLI tested only): Jujutsu workspaces as working copies, a source-control provider | plugins/jj/README.md |
+| hg | experimental (off by default, fake-CLI tested only): Mercurial shares as working copies, a source-control provider | plugins/hg/README.md |
+| p4 | experimental (off by default, fake-CLI tested only): Perforce clients copied from template clients as working copies, a source-control provider | plugins/p4/README.md |
 
 ## Commands
 

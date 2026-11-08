@@ -20,8 +20,8 @@ const ws = (over: Partial<Workspace> = {}): Workspace =>
     createdAt: '',
     updatedAt: '',
     worktrees: [
-      { id: 1, repo: 'org/hub', path: '/w/hub/a', branch: 'feat/a', baseBranch: 'main' },
-      { id: 2, repo: 'org/hub', path: '/w/hub/b', branch: 'feat/b', baseBranch: 'main' },
+      { id: 1, vcs: 'git', repo: 'org/hub', path: '/w/hub/a', branch: 'feat/a', baseBranch: 'main' },
+      { id: 2, vcs: 'git', repo: 'org/hub', path: '/w/hub/b', branch: 'feat/b', baseBranch: 'main' },
     ],
     sessions: [
       { id: 1, claudeSessionId: 'uuid-a', shortId: 'aaaa1111', role: 'main', name: 'A', cwd: '/w/hub/a' },
@@ -81,7 +81,7 @@ test('sessionWorktrees: the start worktree first, then recorded bound ones that 
 });
 
 test('sessionWorktrees compares Windows spellings and trailing slashes through normPath', () => {
-  const recorded = [{ id: 1, repo: 'org/hub', path: 'C:/w/hub/a/', branch: 'a', baseBranch: 'main' }, { id: 2, repo: 'org/hub', path: 'C:/w/hub/b', branch: 'b', baseBranch: 'main' }];
+  const recorded = [{ id: 1, vcs: 'git', repo: 'org/hub', path: 'C:/w/hub/a/', branch: 'a', baseBranch: 'main' }, { id: 2, vcs: 'git', repo: 'org/hub', path: 'C:/w/hub/b', branch: 'b', baseBranch: 'main' }];
   const prev = process.env.WORK_HUB_PLATFORM;
   process.env.WORK_HUB_PLATFORM = 'win32';
   try {

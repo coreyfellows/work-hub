@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AsOf, DiffTable, get, parsePatch, useLowData } from '../../plugin-api/web.ts';
+import { AsOf, copyLabel, DiffTable, get, parsePatch, useLowData } from '../../plugin-api/web.ts';
 
 type Mode = 'base' | 'commit' | 'staged';
 
@@ -33,7 +33,7 @@ export function WorktreeDiff({
   active,
 }: {
   workspaceId: string;
-  worktrees: Array<{ path: string; repo: string; branch: string | null }>;
+  worktrees: Array<{ path: string; vcs: string; repo: string | null; branch: string | null }>;
   /** Only poll while the pane is showing. */
   active: boolean;
 }) {
@@ -84,8 +84,7 @@ export function WorktreeDiff({
           <select value={pick} onChange={(e) => setPick(Number(e.target.value))}>
             {worktrees.map((t, i) => (
               <option key={t.path} value={i}>
-                {t.repo.split('/').pop()}
-                {t.branch ? `@${t.branch}` : ''}
+                {`${copyLabel(t).name}${t.branch ? `@${t.branch}` : ''}`}
               </option>
             ))}
           </select>

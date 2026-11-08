@@ -1,4 +1,5 @@
 import {
+  copyLabelText,
   TerminalRunContext,
   useToast,
   usePersistedPick,
@@ -40,10 +41,9 @@ function useWorkspaceTerminals({ workspaceId, workspace, paneRef, selectedSessio
     if (t.id === termPick) setTermPick(null);
   };
 
-  const repoName = (r: string) => r.split('/')[1] ?? r;
   const menu: MenuItem[] =
     worktrees.length > 1
-      ? [{ label: 'New terminal', submenu: worktrees.map((t): MenuItem => ({ label: `${repoName(t.repo)} @${t.branch ?? '?'}`, disabled: wsTerms.busy, onSelect: () => void newTerm(t.path) })) }]
+      ? [{ label: 'New terminal', submenu: worktrees.map((t): MenuItem => ({ label: copyLabelText(t), disabled: wsTerms.busy, onSelect: () => void newTerm(t.path) })) }]
       : [{ label: 'New terminal', disabled: wsTerms.busy, onSelect: () => void newTerm(worktrees[0]?.path) }];
 
   return {

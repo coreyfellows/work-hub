@@ -17,6 +17,7 @@ import type { Job, JobCtx } from '../server/jobs.ts';
 import type { ResolvedPlugin } from '../server/plugins/resolve.ts';
 import type { HubEvents } from '../server/lib/events.ts';
 import type { PromptContext, PromptFragmentFn, PromptFragmentKind } from '../server/lib/prompts.ts';
+import type { AgentInstructionOpts, SourceControlProvider, WorkingCopyState } from '../server/lib/vcs/types.ts';
 import type * as transcriptLib from '../server/lib/transcript.ts';
 import type * as attachLib from '../server/lib/attach.ts';
 import type * as execLib from '../server/lib/exec.ts';
@@ -27,6 +28,7 @@ import type * as workspacesStore from '../server/store/workspaces.ts';
 import type * as jobsLib from '../server/jobs.ts';
 
 export { API_VERSION } from './manifest.ts';
+export { copyLabel, copyLabelText, type CopyLike } from './copyLabel.ts';
 /** The models a session can be started on, strongest first (`SessionModel` is one of them). */
 export { SESSION_MODELS, type SessionModel } from './models.ts';
 export { run, runJson } from '../server/lib/exec.ts';
@@ -56,6 +58,12 @@ export { HOST_ENRICHER_ID } from '../server/lib/transcript.ts';
 export { ansiToHtml } from '../server/lib/termhtml.ts';
 /** Why a command can't be typed into a session or terminal (one non-empty line, ≤ 2000 characters), or null. */
 export { invalidCommand } from '../server/lib/commandText.ts';
+/**
+ * Folder paths as Settings takes them: `expandFolder` turns `~`/`~/x` into the home folder (trailing slashes dropped);
+ * `folderTrustError` says why a folder can't be trusted for `claude --bg` as a plain folder (not absolute, `/`, the home
+ * folder or one containing it, a system folder), or null.
+ */
+export { expandFolder, folderTrustError } from '../server/lib/folders.ts';
 /** A route's JSON body (must be an object); otherwise Hono answers 400 `{ error: 'JSON body required' }`. */
 export { readJson, JSON_BODY_REQUIRED } from '../server/lib/http.ts';
 
@@ -82,6 +90,9 @@ export type {
   PromptContext,
   PromptFragmentFn,
   PromptFragmentKind,
+  SourceControlProvider,
+  WorkingCopyState,
+  AgentInstructionOpts,
 };
 
 /**
@@ -120,6 +131,11 @@ export interface PluginPaths {
   /** Where repos are checked out (one folder per repo name) and the root new git worktrees go under (`<root>/<repo>/<folder>`). */
   reposDir: string;
   worktreesDir: string;
+  /**
+   * Where plain (no source control) workspaces are created, as `<plainDir>/<name>` (Settings → Folders "Plain
+   * workspaces", default `~/workspaces`); `trustWorktree` accepts folders under it. Read on use: Settings can change it.
+   */
+  plainDir: string;
   /**
    * The ticket-workflow Claude scripts folder (`trust-worktree.sh`, `ensure-ticket-note.sh`…): the ticket-workflow
    * plugin's bundled copy while it's loaded, else `WORK_HUB_TW_SCRIPTS`, else empty (no scripts: leave that step out).
@@ -269,6 +285,19 @@ export interface ServerPluginContext {
     /** Ask for a reconcile pass now (e.g. your source changed); passes never overlap, so this may just queue one. */
     run(): void;
   };
+  /**
+   * Source-control providers (git and folder are the core's). `register` adds one (an id already registered throws);
+   * `detect` finds the provider whose working copy `path` is in and its root: `prefer` (a provider id) is asked first,
+   * then git, jj, hg, p4, the others as registered, and folder last (it matches any path, never beating a real match).
+   */
+  vcs: {
+    register(p: SourceControlProvider): void;
+    get(id: string): SourceControlProvider | undefined;
+    list(): SourceControlProvider[];
+    detect(path: string, opts?: { prefer?: string | null }): Promise<{ provider: SourceControlProvider; root: string } | null>;
+    /** Settings → Source control's default provider id, or null for Detect (or a provider that isn't registered). */
+    effectiveDefault(): string | null;
+  };
   auth: { setProvider(p: AuthProvider): void };
   guard: { addPublicPaths(paths: string[]): void };
   /**
@@ -313,7 +342,7 @@ export interface ServerPluginContext {
 /**
  * A plugin's server entry: `export default function register(ctx) { … }`. If it throws, the plugin is marked skipped and
  * what it registered is taken back: services, enrichers, launch args, reconcile passes, hide predicates, urgent fields,
- * prompt fragments, file roots, public paths and the auth provider. Routes and middleware already on `ctx.app`, sources already added
+ * prompt fragments, file roots, source-control providers, public paths and the auth provider. Routes and middleware already on `ctx.app`, sources already added
  * and event listeners can't be removed, so register those last.
  */
 export type RegisterServerPlugin = (ctx: ServerPluginContext) => void | Promise<void>;

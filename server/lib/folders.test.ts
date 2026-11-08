@@ -3,7 +3,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { checkFolder, expandFolder, folderError, foldersGroup } from './folders.ts';
+import { checkFolder, expandFolder, folderError, folderTrustError, foldersGroup } from './folders.ts';
 
 test('expandFolder: ~ and trailing slashes', () => {
   assert.equal(expandFolder('~/code/', '/h'), '/h/code');
@@ -38,4 +38,28 @@ test('the group has the env names the app already used', () => {
     ['worktreesDir', 'TW_WORKTREES_ROOT', '/h/worktrees'],
   ]);
   assert.equal(g.defs.find((d) => d.key === 'cleanupOnClose')?.default, true);
+});
+
+test('the plain workspaces folder: ~/workspaces by default, WORK_HUB_PLAIN_DIR', () => {
+  const d = foldersGroup('/h').defs.find((x) => x.key === 'plainDir');
+  assert.deepEqual([d?.default, d?.env], ['/h/workspaces', 'WORK_HUB_PLAIN_DIR']);
+});
+
+test('folderTrustError: never the root, home itself or system folders', () => {
+  for (const bad of ['/', '/h', '~', '/usr/local', '/System/x', '/etc', '/private/tmp/x', '/var/db', '/Library/a', '/Applications', '/opt/x', '/bin', '/sbin']) {
+    assert.ok(folderTrustError(bad, '/h'), bad);
+  }
+  assert.equal(folderTrustError('~/Documents/a', '/h'), null);
+  assert.equal(folderTrustError('/h/Documents/a', '/h'), null);
+  assert.equal(folderTrustError('/srv/work', '/h'), null);
+  assert.equal(folderTrustError('/usrx/y', '/h'), null);
+  assert.match(folderTrustError('rel/x', '/h')!, /absolute/);
+  assert.ok(folderTrustError(5, '/h'));
+});
+
+test('folderTrustError: also refuses an ancestor of the home folder', () => {
+  assert.ok(folderTrustError('/Users', '/Users/me'));
+  assert.ok(folderTrustError('/Users/me', '/Users/me'));
+  assert.equal(folderTrustError('/Users/me/x', '/Users/me'), null);
+  assert.equal(folderTrustError('/Users/mex', '/Users/me'), null);
 });

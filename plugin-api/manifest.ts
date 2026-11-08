@@ -57,6 +57,12 @@ export interface PluginManifest {
    * `foo` is `/work-hub:foo` there. Inside a skill, `${CLAUDE_PLUGIN_ROOT}/skills/<name>/` is the skill's own folder.
    */
   skills?: string;
+  /**
+   * The Claude Code version (`x.y.z`) this plugin was last brought up to date with. The claude-monitor plugin only
+   * suggests changes from newer Claude Code releases; a session that updates the plugin for a release sets it. Optional,
+   * informational for the core.
+   */
+  claudeVersion?: string;
   /** Former ids, so existing config keyed by an old id still applies. */
   aliases?: string[];
   /** Settings the plugin offers; Settings shows them as a section titled with the plugin's title. */

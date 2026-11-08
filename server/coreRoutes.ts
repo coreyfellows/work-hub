@@ -20,6 +20,8 @@ export const CORE_ROUTES: readonly string[] = [
   'POST /api/setup/skip',
   'GET /api/layout',
   'POST /api/layout',
+  'POST /api/trusted-folders',
+  'GET /api/vcs',
   'GET /api/state',
   'GET /api/status',
   'POST /api/sources/:id/refresh',

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { CORE_ROUTES, routeConflicts, routeShape } from './coreRoutes.ts';
 
 const here = import.meta.dirname;
-const files = ['index.ts', 'plugins/loader.ts', 'plugins/configRoute.ts', 'settingsRoute.ts', 'applyRoute.ts', 'setupRoute.ts', 'worktreeRoutes.ts'];
+const files = ['index.ts', 'plugins/loader.ts', 'plugins/configRoute.ts', 'settingsRoute.ts', 'applyRoute.ts', 'setupRoute.ts', 'worktreeRoutes.ts', 'trustedFoldersRoute.ts'];
 
 test('CORE_ROUTES lists exactly the /api routes the core registers, with their methods', () => {
   const found = new Set<string>();

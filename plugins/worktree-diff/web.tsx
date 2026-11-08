@@ -1,4 +1,5 @@
 import type { WebPluginContext } from '../../plugin-api/web.ts';
+import { hasGitCopy } from './gitCopies.ts';
 import { WorktreeDiff } from './WorktreeDiff.tsx';
 import './styles.css';
 
@@ -8,6 +9,7 @@ export default function register(ctx: WebPluginContext): void {
     id: 'diff',
     label: 'Diff',
     order: 5,
-    component: ({ workspace, visible }) => <WorktreeDiff workspaceId={workspace.id} worktrees={workspace.worktrees} active={visible} />,
+    available: hasGitCopy,
+    component: ({ workspace, visible }) => <WorktreeDiff workspaceId={workspace.id} worktrees={workspace.worktrees.filter((t) => t.vcs === 'git')} active={visible} />,
   });
 }

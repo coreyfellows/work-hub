@@ -4,6 +4,7 @@ import { normPath } from './lib/platform.ts';
 import { run } from './lib/exec.ts';
 import { findTranscript } from './lib/transcript.ts';
 import { bindFromTranscript } from './lib/sessionWorktrees.ts';
+import { SHARED_BRANCHES } from './lib/vcs/git.ts';
 import type { Session } from './sources/claude.ts';
 import * as workspacesStore from './store/workspaces.ts';
 import { addSession, addWorktree, allWorktrees, logEvent, sessionOwners, setWorktreeBranch } from './store/workspaces.ts';
@@ -36,25 +37,28 @@ export function removeReconcilePasses(owner: string): void {
   for (let i = passes.length - 1; i >= 0; i--) if (passes[i].owner === owner) passes.splice(i, 1);
 }
 
-/** Branches too generic to tie a session to a workspace by name alone. */
-const SHARED_BRANCHES = new Set(['main', 'master', 'develop', 'dev', 'trunk']);
 const SPAWN_CHECK_EVERY_MS = 60_000;
 const SPAWN_CHECK_TRIES = 5;
 
 export interface WorktreeRec {
   workspaceId: string;
-  repo: string;
+  /** Absent: git. */
+  vcs?: string;
+  repo: string | null;
   path: string;
   branch: string | null;
 }
 
-/** The workspace owning the deepest recorded worktree containing `cwd`, else a unique repo + branch match. */
+/**
+ * The workspace owning the deepest recorded worktree containing `cwd` (any vcs), else a unique repo + branch match among
+ * git ones (other kinds are matched by path only).
+ */
 export function ownerByCwd(cwd: string, repo: string | null, branch: string | null, worktrees: WorktreeRec[]): string | null {
   const c = normPath(cwd);
   const inside = worktrees.filter((w) => c === normPath(w.path) || c.startsWith(`${normPath(w.path)}/`)).sort((a, b) => b.path.length - a.path.length);
   if (inside.length) return inside[0].workspaceId;
   if (!repo || !branch || SHARED_BRANCHES.has(branch)) return null;
-  const byBranch = new Set(worktrees.filter((w) => w.branch === branch && w.repo.toLowerCase() === repo.toLowerCase()).map((w) => w.workspaceId));
+  const byBranch = new Set(worktrees.filter((w) => (w.vcs ?? 'git') === 'git' && w.branch === branch && w.repo?.toLowerCase() === repo.toLowerCase()).map((w) => w.workspaceId));
   return byBranch.size === 1 ? [...byBranch][0] : null;
 }
 
@@ -182,10 +186,10 @@ export async function reconcile(sessions: Session[]): Promise<boolean> {
     if (!top || !normPath(top).startsWith(`${root}/`)) continue;
     const rec = worktrees.find((w) => normPath(w.path) === normPath(top));
     if (!rec) {
-      addWorktree(ws, { repo: s.repo, path: top, branch: s.branch });
+      addWorktree(ws, { repo: s.repo, path: top, branch: s.branch, vcs: 'git' });
       changed = true;
       worktrees = allWorktrees();
-    } else if (s.branch && rec.branch !== s.branch) {
+    } else if (s.branch && rec.vcs === 'git' && rec.branch !== s.branch) {
       setWorktreeBranch(top, s.branch);
       rec.branch = s.branch;
       changed = true;
@@ -204,7 +208,7 @@ export async function reconcile(sessions: Session[]): Promise<boolean> {
       const top = await run('git', ['-C', p, 'rev-parse', '--show-toplevel'], { timeoutMs: 10_000 }).then((o) => o.trim(), () => '');
       if (top !== p) continue;
       const branch = await run('git', ['-C', p, 'branch', '--show-current'], { timeoutMs: 10_000 }).then((o) => o.trim() || null, () => null);
-      addWorktree(ws, { repo: s.repo, path: p, branch });
+      addWorktree(ws, { repo: s.repo, path: p, branch, vcs: 'git' });
       changed = true;
       worktrees = allWorktrees();
     }

@@ -26,7 +26,7 @@ export interface DigestInput {
     repo: string | null;
   }>;
   /** sessionId → worktrees (the one it started in first, then the ones it is bound to). */
-  worktrees: Record<string, Array<{ path: string; repo: string; branch: string | null; baseBranch: string | null }>>;
+  worktrees: Record<string, Array<{ path: string; repo: string | null; branch: string | null; baseBranch: string | null }>>;
   /** claim / done events (any order; sorted here). */
   events: Array<{ at: string; type: string; detail: string | null; sessionId: string | null }>;
   prs: Array<{ number: number; title: string; url: string; repo: string; branch: string; isDraft: boolean; checks: string | null }>;

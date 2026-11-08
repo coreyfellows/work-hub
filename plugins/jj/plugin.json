@@ -1,0 +1,8 @@
+{
+  "id": "jj",
+  "apiVersion": 1,
+  "title": "Jujutsu (jj) — experimental",
+  "description": "Jujutsu workspaces as a workspace's working copies (create, line, dirty check, remove). Experimental: tested only against a fake jj",
+  "defaultEnabled": false,
+  "server": "server.ts"
+}

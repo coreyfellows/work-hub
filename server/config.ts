@@ -6,7 +6,11 @@ import { shellWord } from './lib/shellWord.ts';
 const env = process.env;
 
 /** The repos / worktrees folders in force (env, else Settings, else the default), set at startup by index.ts. */
-let folderResolver: ((which: 'repos' | 'worktrees') => string | undefined) | null = null;
+let folderResolver: ((which: 'repos' | 'worktrees' | 'plain') => string | undefined) | null = null;
+let vcsDefaultResolver: (() => string | undefined) | null = null;
+export function setVcsDefaultResolver(f: typeof vcsDefaultResolver): void {
+  vcsDefaultResolver = f;
+}
 export function setFolderResolver(f: typeof folderResolver): void {
   folderResolver = f;
 }
@@ -88,6 +92,11 @@ export const config = {
     recentDoneMs: Number(env.WORK_HUB_RECENT_DONE_MS ?? 24 * 3600_000),
   },
 
+  /** Settings → Source control: the provider new workspaces prefer ('detect' = find it from the folder). Read through `effectiveVcsDefault`. */
+  get vcsDefault(): string {
+    return vcsDefaultResolver?.() ?? env.WORK_HUB_VCS_DEFAULT ?? 'detect';
+  },
+
   paths: {
     // Working dir for headless claude -p runs; sessions here are hidden from the sessions panel.
     scratch: cacheDir,
@@ -97,6 +106,10 @@ export const config = {
     },
     get worktrees(): string {
       return folderResolver?.('worktrees') ?? env.TW_WORKTREES_ROOT ?? `${home}/worktrees`;
+    },
+    // Where plain (no source control) workspaces are created; trusted for claude --bg without a confirmation.
+    get plain(): string {
+      return folderResolver?.('plain') ?? env.WORK_HUB_PLAIN_DIR ?? `${home}/workspaces`;
     },
     // The ticket-workflow scripts when the ticket-workflow plugin is off (it supplies its own bundled copy when on).
     ticketWorkflowScripts: env.WORK_HUB_TW_SCRIPTS ?? '',

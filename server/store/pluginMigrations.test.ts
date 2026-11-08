@@ -12,9 +12,9 @@ function fresh(): DatabaseSync {
 const hasTable = (d: DatabaseSync, name: string) =>
   d.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(name) !== undefined;
 
-test('core migrations reach version 16 and create plugin_migrations', () => {
+test('core migrations reach version 18 and create plugin_migrations', () => {
   const d = fresh();
-  assert.equal((d.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 16);
+  assert.equal((d.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 18);
   assert.ok(hasTable(d, 'plugin_migrations'));
 });
 

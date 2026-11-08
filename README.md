@@ -77,6 +77,16 @@ repo, so pulling never conflicts with it. Missing means all defaults.
 
 Core knobs (ports, dirs, intervals) are `WORK_HUB_*` env vars, listed in `server/config.ts`.
 
+## Source control and plain folders
+
+Workspaces use git by default, but they aren't limited to it. **New workspace** has a "More options" section with
+Source control (Detect, or a specific one) and Folder, and a workspace can be a plain folder with no version control:
+no setup session, just a place to work. Settings → Source control sets the default and Settings → Folders sets where
+plain workspaces are made. Jujutsu, Mercurial and Perforce are experimental plugins, off by default: switch them on
+in Settings → Plugins (applies after a rebuild and restart). A plain folder can be anywhere; outside work-hub's own
+folders you confirm it once. The Diff tab and PR features are git-only. In a workspace's terminal,
+`wh worktree add --vcs <id>` records a copy of another kind.
+
 ## Notes and code
 
 The Note tab (SilverBullet) and Code tab (VS Code in the browser) need their own servers. Ask Claude to follow
